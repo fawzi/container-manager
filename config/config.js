@@ -3,7 +3,7 @@ module.exports = {
   development: {
     app: {
       name: 'Container per user manager',
-      port: process.env.PORT || 3000,
+      port: process.env.PORT || 80,
       secret: 'theTreeInFront'
     },
     k8Api: {
@@ -11,7 +11,7 @@ module.exports = {
       ca: '/home/kariryaa/.minikube/ca.crt',
       cert: '/home/kariryaa/.minikube/apiserver.crt',
       key: '/home/kariryaa/.minikube/apiserver.key',
-      node: 'https://192.168.99.100'
+      node: '192.168.99.100'
     },
     k8component: {
       namespace: 'default',
@@ -40,7 +40,3 @@ module.exports = {
     }
   }
 };
-
-A manager for containers. Written in nodejs.
-
-Manages beaker, zeppelin and Creedo docker containers. Uses the container per type per user architecture.
