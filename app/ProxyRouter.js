@@ -1,4 +1,4 @@
-
+const async = require('async');
 module.exports = function (config,k8) {
 
 var ProxyRouter = function(options) {
@@ -30,40 +30,64 @@ ProxyRouter.prototype.lookup = function(path, user, callback) {
       });
   }
   if(!resolved){
-    async.waterfall([
-      //Check if service exists
-      function(next) {
-        k8.ns(config.k8component.namespace).service.get('beaker-sv-'+user.id, next);
-      },
-      //Create the service if its not present
-      function(err,result,next) {
-        if(err && err.code == 404){
-          k8.ns(config.k8component.namespace).service.post({ body: k8component('service', user.id)}, next);
-        }
-        else next(null, err,result);
-      },
-      //Check if service exists
-      function(err,result,next) {
-        k8.ns(config.k8component.namespace).replicationcontrollers.get('beaker-rc-'+user.id, next);
-      },
-      //Create the rc-controller if its not present
-      function(err,result,next) {
-        if(err && err.code == 404){
-          k8.ns(config.k8component.namespace).replicationcontrollers.post({ body: k8component('replicationController', user.id)}, next);
-        }
-        else next(null, err,result);
-      },
-      function(err,result, next){
-        k8.ns(config.k8component.namespace).service.get('beaker-sv-'+user.id,function(err, result){
-          var target = config.app.node+':'+result.spec.ports[0].nodePort;
-          self.cache[user.id] = {path : target};
-          self.expire_route(user.id, self.cache_ttl);
-          callback(target);
-        });
-      }
-    ], function(next) {
-      console.log(next);
-    });
+  k8.ns(config.k8component.namespace).service.get('beaker-sv-'+user.id,function(err, result){
+    var target = {
+        host: config.k8Api.node,
+        port: result.spec.ports[0].nodePort
+    };
+    self.cache[user.id] = {path : target};
+    self.expire_route(user.id, self.cache_ttl);
+    callback(target);
+  });
+
+//     k8.ns(config.k8component.namespace).service.get('beaker-sv-'+user.id, function(err,result){
+//        if(err && err.code == 404){
+//          k8.ns(config.k8component.namespace).service.post({ body: k8component('service', user.id)}, next);
+//        }
+//           k8.ns(config.k8component.namespace).replicationcontrollers.get('beaker-rc-'+user.id, next);
+//     });
+
+//    async.waterfall([
+//      //Check if service exists
+//      function(next) {
+//      console.log('Checking for service!');
+//        try {
+//            k8.ns(config.k8component.namespace).service.get('beaker-sv-'+user.id, next);
+//        } catch(err) {
+//          console.log('got error ' + err);
+//        }
+//      },
+//      //Create the service if its not present
+//      function(err,result,next) {
+//
+//
+//        if(err && err.code == 404){
+//          k8.ns(config.k8component.namespace).service.post({ body: k8component('service', user.id)}, next);
+//        }
+//        else next(null, err,result);
+//      },
+//      //Check if replication-controller exists
+//      function(err,result,next) {
+//        k8.ns(config.k8component.namespace).replicationcontrollers.get('beaker-rc-'+user.id, next);
+//      },
+//      //Create the replication-controller if its not present
+//      function(err,result,next) {
+//        if(err && err.code == 404){
+//          k8.ns(config.k8component.namespace).replicationcontrollers.post({ body: k8component('replicationController', user.id)}, next);
+//        }
+//        else next(null, err,result);
+//      },
+//      function(err,result, next){
+//        k8.ns(config.k8component.namespace).service.get('beaker-sv-'+user.id,function(err, result){
+//          var target = config.app.node+':'+result.spec.ports[0].nodePort;
+//          self.cache[user.id] = {path : target};
+//          self.expire_route(user.id, self.cache_ttl);
+//          callback(target);
+//        });
+//      }
+//    ], function(next) {
+//      console.log(next);
+//    });
   }
 };
 

@@ -13,6 +13,16 @@ module.exports = {
       key: '/home/kariryaa/.minikube/apiserver.key',
       node: '192.168.99.100'
     },
+    passport: {
+      strategy: 'saml',
+      saml: {
+        path: process.env.SAML_PATH || '/login/callback',
+        entryPoint: process.env.SAML_ENTRY_POINT || 'https://193.166.24.153/idp/profile/SAML2/Redirect/SSO',
+        issuer: 'http://172.24.131.117/shibboleth',
+        identifierFormat: null,
+        acceptedClockSkewMs: -1
+      }
+    },
     k8component: {
       namespace: 'default',
       image: 'beakernotebook/beaker'

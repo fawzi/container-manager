@@ -15,7 +15,8 @@ module.exports = function (passport, config) {
       path: config.passport.saml.path,
       entryPoint: config.passport.saml.entryPoint,
       issuer: config.passport.saml.issuer,
-      cert: config.passport.saml.cert
+      identifierFormat: config.passport.saml.identifierFormat,
+      acceptedClockSkewMs: -1
     },
     function (profile, done) {
       return done(null,
