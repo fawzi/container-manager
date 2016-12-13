@@ -3,7 +3,7 @@ const http = require('http');
 const path = require('path');
 const passport = require('passport');
 const morgan = require('morgan');
-const cookieParser = require('cookie-parser');
+const cookieParser = require('cookie-parser')();
 const bodyParser = require('body-parser');
 const session = require('express-session');
 const errorhandler = require('errorhandler');
@@ -33,23 +33,28 @@ app.set('port', config.app.port);
 app.set('views', __dirname + '/app/views');
 app.set('view engine', 'jade');
 app.use(morgan('combined'));
-app.use(cookieParser());
+app.use(cookieParser);
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
-app.use(session(
-  {
-    resave: true,
-    saveUninitialized: true,
-    secret: config.app.secret,
-    httpOnly: false
-  }));
+const sessionManager = session(
+                  {
+                    genid: function(req) {
+                    console.log('Request to generate a new session ID');
+                     return 'mysession'; // use UUIDs for session IDs
+                    },
+                    resave: true,
+                    saveUninitialized: true,
+                    secret: config.app.secret,
+                    httpOnly: false
+                  });
+app.use(sessionManager);
 var passportInit = passport.initialize();
 var passportSession =passport.session();
 app.use(passportInit);
 app.use(passportSession);
-app.use(express.static(path.join(__dirname, 'public')));
+//app.use(express.static(path.join(__dirname, 'public')));
 
-const expressWs = require('express-ws')(app);
+
 const proxyServer = httpProxy.createProxyServer({});
 require('./config/routes')(app, config, proxyServer, proxyRouter, k8, passport, passportInit, passportSession);
 
@@ -58,14 +63,10 @@ require('./config/routes')(app, config, proxyServer, proxyRouter, k8, passport, 
 //});
 
 
-
-proxyServer.on('upgrade', function (req, socket, head) {
-  proxy.ws(req, socket, head);
-});
-
 var httpServer = http.createServer(app);
 httpServer.on('upgrade', function (req, socket, head) {
     console.log("XXX upgrade")
+    console.log('Upgrade req: '+JSON.stringify(req.headers, null, 2))
     /*passport.authenticate('saml',function(err, user, info){
         if (err) console.log("error " + err)
         if (user) {
@@ -75,16 +76,29 @@ httpServer.on('upgrade', function (req, socket, head) {
             console.log("no user!")
         }
     })*/
-    passportInit(req, socket, function () {
-    console.log("XXX init")
-      // Use the built-in sessions
-      passportSession(req, socket, function () {
-        // Make the user available throughout the frontend
-        console.log("XXX session")
-        console.log(req.user)
-        // proxyServer.ws(req, socket, head, { target:target });
+      cookieParser(req, {}, function() {
+        console.log("Retrieved cookie    :"+ JSON.stringify(req.cookies, null, 2));
+        var sessionID = req.cookies['connect.sid'];
+
+        sessionManager(req, {}, function(){
+        console.log('Retrieved session: '+JSON.stringify(req.session, null, 2))
+        console.log('Retrieved sessionID: ' +req.sessionID);
+//        passportInit(req, {}, function () {
+//        console.log("XXX init")
+          // Use the built-in sessions
+          passportSession(req, {}, function () {
+            // Make the user available throughout the frontend
+            console.log("XXX session")
+            console.log('Is auth: '+ req.isAuthenticated())
+            console.log(req.user)
+
+            console.log('Upgrade req: '+JSON.stringify(req.session, null, 2))
+            // proxyServer.ws(req, socket, head, { target:target });
+          });
+//        });
       });
     });
+
 });
 //
 httpServer.listen(80);

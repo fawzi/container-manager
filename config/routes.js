@@ -1,4 +1,5 @@
 const httpProxy = require('http-proxy');
+const fs = require('fs');
 
 module.exports = function (app, config, proxyServer, proxyRouter, k8, passport, passportInit, passportSession) {
 
@@ -20,7 +21,7 @@ module.exports = function (app, config, proxyServer, proxyRouter, k8, passport, 
     }
       var route = {
         host: '192.168.99.100' ,
-        port: 31829
+        port: 31382 
       }
 //    proxyRouter.lookup('/beaker', sess.user, function(route) {
       if (route) {
@@ -38,6 +39,42 @@ module.exports = function (app, config, proxyServer, proxyRouter, k8, passport, 
 //    });
   }
 
+  app.get('/',function(req, res) {
+
+    if (req.isAuthenticated()) {
+          console.log('Normal req: '+JSON.stringify(req.headers, null, 2))
+          console.log('Req session: '+JSON.stringify(req.session, null, 2))
+          console.log('Req sessionID: '+JSON.stringify(req.sessionID, null, 2))
+          console.log('Get index');
+          console.log('Is auth: '+ req.isAuthenticated())
+          var randomNumber=Math.random().toString();
+          randomNumber=randomNumber.substring(2,randomNumber.length);
+          res.cookie('nomadUser',req.user.email, { maxAge: 900000, httpOnly: false });
+          fs.createReadStream('./index.html')
+          .pipe(res);
+        } else {
+            res.redirect('/login');
+        }
+  });
+
+  app.get('/login',
+    passport.authenticate(config.passport.strategy,
+      {
+        successRedirect: '/',
+        failureRedirect: '/login'
+      })
+  );
+
+  app.post(config.passport.saml.path,
+    passport.authenticate(config.passport.strategy,
+      {
+        failureRedirect: '/',
+        failureFlash: true
+      }),
+    function (req, res) {
+      res.redirect('/');
+    }
+  );
 
   app.get('/:foo(beaker|[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f])/*', function (req, res) {
     redirect(req, res,'/beaker', function(route){
@@ -75,31 +112,31 @@ module.exports = function (app, config, proxyServer, proxyRouter, k8, passport, 
     });
   });
 
-  var tagret = {
-    host: '192.168.99.100' ,
-    port: 31829
-  }
-  app.ws('/:foo(beaker|[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f])/*', function(ws, req) {
-    ws.on('connection', function (socket) {
-      proxyServer.ws(req, socket, ws.head,{
-          target: target
-      });
-    });
-    ws.on('message', function(msg) {
-      ws.send(msg);
-    });
-  });
-
-  app.ws('/*', function(ws, req) {
-    ws.on('connection', function ( socket) {
-      proxyServer.ws(req, ws.socket, ws.head,{
-          target: target
-      });
-    });
-    ws.on('message', function(msg) {
-      ws.send(msg);
-    });
-  });
+//  var tagret = {
+//    host: '192.168.99.100' ,
+//    port: 31829
+//  }
+//  app.ws('/:foo(beaker|[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f])/*', function(ws, req) {
+//    ws.on('connection', function (socket) {
+//      proxyServer.ws(req, socket, ws.head,{
+//          target: target
+//      });
+//    });
+//    ws.on('message', function(msg) {
+//      ws.send(msg);
+//    });
+//  });
+//
+//  app.ws('/*', function(ws, req) {
+//    ws.on('connection', function ( socket) {
+//      proxyServer.ws(req, ws.socket, ws.head,{
+//          target: target
+//      });
+//    });
+//    ws.on('message', function(msg) {
+//      ws.send(msg);
+//    });
+//  });
 
 
 //  app.ws('/*', function(ws, req) {

@@ -8,16 +8,16 @@ module.exports = {
     },
     k8Api: {
       url: 'https://192.168.99.100:8443',
-      ca: '~/.minikube/ca.crt',
-      cert: '~/.minikube/apiserver.crt',
-      key: '~/.minikube/apiserver.key',
+      ca: '/.minikube/ca.crt',
+      cert: '/.minikube/apiserver.crt',
+      key: '/.minikube/apiserver.key',
       node: '192.168.99.100'
     },
     passport: {
       strategy: 'saml',
       saml: {
         path: process.env.SAML_PATH || '/login/callback',
-        entryPoint: process.env.SAML_ENTRY_POINT || 'https://193.166.24.153/idp/profile/SAML2/Redirect/SSO',
+        entryPoint: process.env.SAML_ENTRY_POINT || 'https://nomad-login.csc.fi/idp/profile/SAML2/Redirect/SSO',
         issuer: 'http://192.168.0.157/shibboleth',
         identifierFormat: null,
         acceptedClockSkewMs: -1
@@ -25,7 +25,8 @@ module.exports = {
     },
     k8component: {
       namespace: 'default',
-      image: 'beakernotebook/beaker'
+      image: 'beakernotebook/beaker',
+      tempPort: '31382'
     },
     beaker: {
       hash: 'b7c81a9'
