@@ -7,9 +7,11 @@ module.exports = function (config) {
     url: config.k8Api.url,
     version: 'v1',  // Defaults to 'v1'
     namespace: 'default', // Defaults to 'default',
-    ca: fs.readFileSync(config.k8Api.ca),
-    cert: fs.readFileSync(config.k8Api.cert),
-    key: fs.readFileSync(config.k8Api.key)
+    if(config.k8Api.ca){
+      ca: fs.readFileSync(config.k8Api.ca),
+      cert: fs.readFileSync(config.k8Api.cert),
+      key: fs.readFileSync(config.k8Api.key)
+    }
   });
 
   function print(err, result) {

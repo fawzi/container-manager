@@ -45,8 +45,8 @@ module.exports = {
       host: '130.183.207.77'
     },
     k8Api: {
-      url: 'http://:',
-      node: 'https://192.168.99.100'
+      url: 'http://130.183.207.100:8080',
+      node: '130.183.207.100'
     },
     passport: {
       strategy: 'saml',
