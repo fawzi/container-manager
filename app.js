@@ -12,7 +12,6 @@ const session = require('express-session');
 const redis   = require("redis");
 const RedisStore = require('connect-redis')(session);
 const httpProxy = require('http-proxy');
-const client = redis.createClient();
 const SamlStrategy = require('passport-saml').Strategy;
 
 var env = process.env.NODE_ENV || 'development';
@@ -24,9 +23,10 @@ require('./config/passport')(passport, config);
 const k8 = require('./app/kubernetes')(config);
 const k8component = require('./app/components')(config);
 
+const client = redis.createClient(config.redis);
 const ProxyRouter = require('./app/ProxyRouter')(config,k8, k8component)
 const proxyRouter = new ProxyRouter({
-  backend: redis.createClient(),
+  backend: client,
   cache_ttl: 50
 });
 

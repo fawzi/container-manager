@@ -14,6 +14,10 @@ module.exports = {
       key: '/.minikube/apiserver.key',
       node: '192.168.99.100'
     },
+    redis: {
+      port: 6379,
+      host: 'localhost'
+    },
     passport: {
       strategy: 'saml',
       saml: {
@@ -35,6 +39,10 @@ module.exports = {
       port: process.env.PORT || 443,
       secret: 'theTreeInFrontIsReal',
       localOverride: '/localoverride'
+    },
+    redis: {
+      port: 6379,
+      host: '130.183.207.77'
     },
     k8Api: {
       url: 'http://:',
