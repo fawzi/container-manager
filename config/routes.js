@@ -1,7 +1,10 @@
+const http = require('http');
+
 const httpProxy = require('http-proxy');
 const fs = require('fs');
-
-module.exports = function (app, config, proxyServer, proxyRouter, k8, passport, passportInit, passportSession) {
+const ensureLoggedIn = require('connect-ensure-login').ensureLoggedIn;
+const bodyParser = require('body-parser');
+module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, passport, passportInit, passportSession) {
 
 
   function makeid(){
@@ -12,213 +15,68 @@ module.exports = function (app, config, proxyServer, proxyRouter, k8, passport, 
     return text;
   }
 
-  function redirect(req, res, path, next) {
-    var sess = req.session
-    if (!sess.user) {
-      sess.user = {};
-      if(!sess.user.id)
-        sess.user.id = 'user1';//makeid();
-    }
-      var route = {
-        host: '192.168.99.100' ,
-        port: 31382 
-      }
-//    proxyRouter.lookup('/beaker', sess.user, function(route) {
-      if (route) {
-        next(route);
-      }
-      else {
-        try {
-          res.writeHead(404);
-          res.end();
-        }
-        catch (er) {
-          console.error("res.writeHead/res.end error: %s", er.message);
-        }
-      }
-//    });
-  }
-
-  app.get('/',function(req, res) {
-
-    if (req.isAuthenticated()) {
-          console.log('Normal req: '+JSON.stringify(req.headers, null, 2))
-          console.log('Req session: '+JSON.stringify(req.session, null, 2))
-          console.log('Req sessionID: '+JSON.stringify(req.sessionID, null, 2))
-          console.log('Get index');
-          console.log('Is auth: '+ req.isAuthenticated())
-          var randomNumber=Math.random().toString();
-          randomNumber=randomNumber.substring(2,randomNumber.length);
-          res.cookie('nomadUser',req.user.email, { maxAge: 900000, httpOnly: false });
-          fs.createReadStream('./index.html')
-          .pipe(res);
-        } else {
-            res.redirect('/login');
-        }
-  });
-
   app.get('/login',
     passport.authenticate(config.passport.strategy,
       {
-        successRedirect: '/',
+        successReturnToOrRedirect: '/',
         failureRedirect: '/login'
       })
   );
 
-  app.post(config.passport.saml.path,
+
+//Passport SAML request is not accepted until the body is parsed. And since bodyParser can not used in the express app, it is called here separately.
+  app.post(config.passport.saml.path,bodyParser.json(),bodyParser.urlencoded({extended: true}),
     passport.authenticate(config.passport.strategy,
       {
         failureRedirect: '/',
         failureFlash: true
       }),
     function (req, res) {
-      res.redirect('/');
+     if (req.session && req.session.returnTo) {
+       res.redirect(req.session.returnTo);
+     } else {
+        res.redirect('/')  ;
+     }
     }
   );
 
-  app.get('/:foo(beaker|[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f])/*', function (req, res) {
-    redirect(req, res,'/beaker', function(route){
+  app.get(config.app.localOverride,ensureLoggedIn('/login'),function (req, res) {
+    var userID = (req.user.id === undefined) ?  'unknownSess1' : req.user.id;
+    console.log('Get localoverride:' + userID);
+    proxyRouter.client.hget(userID, config.app.localOverride,function(err,data){
+      if(data){
+        var target = JSON.parse(data)
+        res.send(`<h1>HOST: ${target.host}</h1> <h1>PORT: ${target.port}</h1>`)
+      }
+      else
+        res.send(`<h1>Not set yet!</h1>`)
+    });
+
+  });
+
+  app.post(config.app.localOverride,function (req, res) {
+    if(req.query.host && req.query.port){
+      var target = {host: req.query.host, port: req.query.port};
+      var writeTarget = JSON.stringify(target);
+
+      proxyRouter.client.hset(req.query.user, config.app.localOverride, writeTarget,function(err,data){
+        res.send(`<h1>Set! ${req.query.user} ${writeTarget}</h1>`);
+      });
+    }
+    else {
+    console.log(`Not executing! ${JSON.stringify(req.query)}`)
+    }
+  });
+
+  app.get('/nmdalive', function(req, res){
+    res.send("<div>Hello2!!</div>");
+  });
+
+  app.all('/*', ensureLoggedIn('/login'),function (req, res) {
+    redirect(req.user.id, '/beaker', function(route){
       proxyServer.web(req, res,{
-        target: route,
-        ws: true
+        target: route
       });
     });
   });
-
-  app.post('/:foo(beaker|[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f])/*', function (req, res) {
-    redirect(req, res,'/beaker', function(route){
-      proxyServer.web(req, res,{
-        target: route,
-        ws: true
-      });
-    });
-  });
-
-  app.put('/:foo(beaker|[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f])/*', function (req, res) {
-    redirect(req, res,'/beaker', function(route){
-      proxyServer.web(req, res,{
-        target: route,
-        ws: true
-      });
-    });
-  });
-
-  app.delete('/:foo(beaker|[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f])/*', function (req, res) {
-    redirect(req, res,'/beaker', function(route){
-      proxyServer.web(req, res,{
-        target: route,
-        ws: true
-      });
-    });
-  });
-
-//  var tagret = {
-//    host: '192.168.99.100' ,
-//    port: 31829
-//  }
-//  app.ws('/:foo(beaker|[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f])/*', function(ws, req) {
-//    ws.on('connection', function (socket) {
-//      proxyServer.ws(req, socket, ws.head,{
-//          target: target
-//      });
-//    });
-//    ws.on('message', function(msg) {
-//      ws.send(msg);
-//    });
-//  });
-//
-//  app.ws('/*', function(ws, req) {
-//    ws.on('connection', function ( socket) {
-//      proxyServer.ws(req, ws.socket, ws.head,{
-//          target: target
-//      });
-//    });
-//    ws.on('message', function(msg) {
-//      ws.send(msg);
-//    });
-//  });
-
-
-//  app.ws('/*', function(ws, req) {
-//    console.log('Websocket call:' + ws );
-//    console.log('Websocket call req:' + req );
-//    redirect(req, res,'/beaker', function(route){
-//      proxyServer.ws(req, ws.socket, ws.head,{
-//        target: route
-//      });
-//    });
-//  });
-
-//  httpServer.on( 'upgrade', function( req, socket, head ) {
-//    var sess = {};
-//    if (!sess.user) {
-//      sess.user = {};
-//      if(!sess.user.id)
-//        sess.user.id = 'user1';//makeid();
-//    }
-//    proxyRouter.lookup('/beaker', sess.user, function(route) {
-//      if (route) {
-//      route =  {
-//        host: '192.168.99.100',
-//        port: 31829
-//      }
-//      console.log("ws redirect to " + route)
-//
-//        proxyServer.ws(req, socket, head,
-//        { target: route, ws: true });
-//      }
-//      else {
-//          console.error("res.writeHead/res.end error: %s", er.message);
-//      }
-//    });
-//  });
-
-
-//    app.get('/b7c81a9*', function (req, res) {
-//      var sess = req.session
-//      if (!sess.user) {
-//        sess.user = {};
-//        if(!sess.user.id)
-//          sess.user.id = 'user1';//makeid();
-//
-//      }
-//      proxyRouter.lookup('/beaker', sess.user, function(route) {
-//        if (route) {
-//        console.log("Returned route:" + route)
-//          proxyServer.web(req, res,{
-//              target: route
-//          });
-//        }
-//        else {
-//          try {
-//            res.writeHead(404);
-//            res.end();
-//          }
-//          catch (er) {
-//            console.error("res.writeHead/res.end error: %s", er.message);
-//          }
-//        }
-//      });
-//    });
-//
-//    app.ws('/b7c81a9*', function(ws, req) {
-//      console.log(ws);
-//      proxyRouter.lookup('/beaker', sess, function(route) {
-//        if (route) {
-//          proxyServer.ws(req, ws.socket, ws.head,{
-//              target: route
-//          });
-//        }
-//        else {
-//          try {
-//            res.writeHead(404);
-//            res.end();
-//          }
-//          catch (er) {
-//            console.error("res.writeHead/res.end error: %s", er.message);
-//          }
-//        }
-//      });
-//
-//    });
 };
