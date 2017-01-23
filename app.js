@@ -102,6 +102,19 @@ function redirect(userID, path, next) {
 
 
 const proxyServer = httpProxy.createProxyServer({});
+// Listen for the `error` event on `proxy`.
+proxyServer.on('error', function (err, req, response) {
+  try{
+    response.writeHead(500,{
+      'Content-Type': 'text/plain'
+    });
+    response.end('Something went wrong. And we are reporting a custom error message.');
+  }
+  catch(er){
+    console.error("Proxy error: res.writeHead/res.end error: %s", er.message);
+  }
+});
+
 require('./config/routes')(app,redirect, config, proxyServer, proxyRouter, k8, passport, passportInit, passportSession);
 
 var httpServer = http.createServer(app);
