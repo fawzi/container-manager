@@ -16,7 +16,7 @@ module.exports = {
     },
     redis: {
       port: 6379,
-      host: 'localhost'
+      host: '127.0.0.1'
     },
     passport: {
       strategy: 'saml',
@@ -30,12 +30,12 @@ module.exports = {
     },
     k8component: {
       namespace: 'default',
-      image: 'beakernotebook/beaker'
+      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.4.0-77-g020d545'
     }
   },
   production: {
     app: {
-      name: 'Container per user manager',
+      name: 'User container manager',
       port: process.env.PORT || 443,
       secret: 'theTreeInFrontIsReal',
       localOverride: '/localoverride'
@@ -60,7 +60,7 @@ module.exports = {
     },
     k8component: {
       namespace: 'default',
-      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.5.0-13-gee65fcc'
+      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.5.0-22-g19a5972-dirty'
     }
   }
 };

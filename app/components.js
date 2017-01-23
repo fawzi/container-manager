@@ -17,8 +17,7 @@ var createServiceConfig = function(user) {
     "kind": "Service",
     "apiVersion": "v1",
     "metadata": {
-      "name": "beaker-sv-"+user,
-//      "namespace": user,
+      "name": "beaker-svc-"+user,
       "labels": {
         "user": user,
         "app": "beaker"
@@ -47,7 +46,6 @@ var createRcControllerConfig = function(user) {
     "kind": "ReplicationController",
     "metadata": {
       "name": "beaker-rc-"+user,
-//      "namespace": user,
       "labels": {
         "user": user,
         "app": "beaker"

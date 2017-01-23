@@ -14,12 +14,10 @@ var ProxyRouter = function(options) {
 };
 
 ProxyRouter.prototype.kubernetesServiceLookup = function(userID, path, next) { //Kubernetes service names are based
-
-
   var self = this;
 
   function createService(userID) {
-    k8.ns(config.k8component.namespace).service.get('beaker-sv-'+userID,function(err, result) {
+    k8.ns(config.k8component.namespace).service.get('beaker-svc-'+userID,function(err, result) {
       if(err)
         k8.ns(config.k8component.namespace).service.post({ body: k8component('service', userID)}, function(err, result){
           if(err){
@@ -51,7 +49,7 @@ ProxyRouter.prototype.kubernetesServiceLookup = function(userID, path, next) { /
   };
 
   function getServicePort(userID) {
-    k8.ns(config.k8component.namespace).service.get('beaker-sv-'+userID,function(err, result) {
+    k8.ns(config.k8component.namespace).service.get('beaker-svc-'+userID,function(err, result) {
       if(err){
         console.log("#ERROR# Can't find service for the user: " + userID);
         console.log(JSON.stringify(err, null, 2));
@@ -66,6 +64,22 @@ ProxyRouter.prototype.kubernetesServiceLookup = function(userID, path, next) { /
         }
     });
   };
+  function writeToDisk(userID){
+    const fs = require('fs');
+    fs.writeFile("service.json", JSON.stringify(k8component('service', userID), null, 2), function(err) {
+        if(err) {
+            return console.log(err);
+        }
+        console.log("The service file was saved!");
+    });
+    fs.writeFile("rc.json", JSON.stringify(k8component('replicationController', userID), null, 2), function(err) {
+        if(err) {
+            return console.log(err);
+        }
+        console.log("The rc file was saved!");
+    });
+  }
+//    writeToDisk(userID);
   createService(userID);
 };
 
@@ -73,7 +87,7 @@ ProxyRouter.prototype.lookup = function(userID, path, next) {
   var self = this;
   if (!self.cache[userID] || !self.cache[userID][path]) {
     //Check if the localOverride has been defined in the redis client
-    self.client.hget("nomad", config.app.localOverride, function(err, data) {
+    self.client.hget(userID, config.app.localOverride, function(err, data) {
       if(data) { //If of "localOverride" check in redis client
         var target = JSON.parse(data);
         // Set cache and expiration
