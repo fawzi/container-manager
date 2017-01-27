@@ -76,58 +76,49 @@ var createRcControllerConfig = function(user) {
                   "protocol": "TCP"
                 }
               ],
-              "imagePullPolicy": "IfNotPresent"
-//              ,
-//              "volumeMounts": [
-//                {
-//                  "mountPath": "/raw-data",
-//                  "name": "raw-data-volume",
-//                  "readOnly": true
-//                },
-//                {
-//                  "mountPath": "/parsed",
-//                  "name": "parsed-data-volume",
-//                  "readOnly": true
-//                },
-//                {
-//                  "mountPath": "/normalized",
-//                  "name": "normalized-data-volume",
-//                  "readOnly": true
-//                },
-//                {
-//                  "mountPath": "/data",
-//                  "name": "user-data-volume"
-//                },
-//                {
-//                  "mountPath": "/home/beaker/notebooks",
-//                  "name": "notebooks-volume"
-//                }
-//              ]
+              "imagePullPolicy": "IfNotPresent",
+              "volumeMounts": [
+                {
+                  "mountPath": "/raw-data",
+                  "name": "raw-data-volume",
+                  "readOnly": true
+                },
+                {
+                  "mountPath": "/parsed",
+                  "name": "parsed-data-volume",
+                  "readOnly": true
+                },
+                {
+                  "mountPath": "/normalized",
+                  "name": "normalized-data-volume",
+                  "readOnly": true
+                },
+                {
+                  "mountPath": "/home/beaker/notebooks",
+                  "name": "notebooks-data-volume"
+                }
+              ]
             }
           ]
-//          ,
-//          volumes: [
-//            {
-//              "name": "parsed-data-volume",
-//              "hostPath": { "path": "/nomad/nomadlab/parsed" }
-//            },
-//            {
-//              "name": "raw-data-volume",
-//              "hostPath": { "path": "/nomad/nomadlab/raw-data"}
-//            },
-//            {
-//              "name": "normalized-data-volume",
-//              "hostPath": { "path": "/nomad/nomadlab/normalized" }
-//            },
-//            {
-//              "name": "user-data-volume",
-//              "hostPath": { "path": "/nomad/nomadlab/kubernetes/user-data/{{user}}" }
-//            },
-//            {
-//              "name": "notebooks-volume",
-//              "hostPath": { "path": "/nomad/nomadlab/beaker-notebooks/notebooks"}
-//            }
-//          ]
+          ,
+          volumes: [
+            {
+              "name": "parsed-data-volume",
+              "hostPath": { "path": "/nomad/nomadlab/parsed" }
+            },
+            {
+              "name": "raw-data-volume",
+              "hostPath": { "path": "/nomad/nomadlab/raw-data"}
+            },
+            {
+              "name": "normalized-data-volume",
+              "hostPath": { "path": "/nomad/nomadlab/normalized" }
+            },
+            {
+              "name": "notebooks-data-volume",
+              "hostPath": { "path": "/nomad/nomadlab/beaker-notebooks/notebooks" }
+            }
+          ]
         }
       }
     }
