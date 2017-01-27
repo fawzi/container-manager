@@ -60,6 +60,7 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
       var writeTarget = JSON.stringify(target);
 
       proxyRouter.client.hset(req.query.user, config.app.localOverride, writeTarget,function(err,data){
+        proxyRouter.client.expireat(req.query.user, 60*10);
         res.send(`<h1>Set! ${req.query.user} ${writeTarget}</h1>`);
       });
     }
@@ -73,7 +74,9 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
   });
 
   app.all('/*', ensureLoggedIn('/login'),function (req, res) {
-    redirect(req.user.id, '/beaker', function(route){
+//  res.send(`<meta http-equiv="refresh" content="5" > <h3>Please wait while we start a container for you!</h3>`);
+//    console.log('Retrieved session: '+JSON.stringify(req.session, null, 2))
+    redirect(req, res, req.user.id, false, '/beaker', function(route){
       proxyServer.web(req, res,{
         target: route
       });

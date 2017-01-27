@@ -1,5 +1,5 @@
-const vhttp = require('http');
-module.exports = function (config,k8, k8component) {
+const http = require('http');
+module.exports = function (config, k8, k8component) {
 
 var ProxyRouter = function(options) {
   if (!options.backend) {
@@ -13,7 +13,7 @@ var ProxyRouter = function(options) {
   console.log("ProxyRouter cache TTL is set to " + this.cache_ttl + " ms.");
 };
 
-ProxyRouter.prototype.kubernetesServiceLookup = function(userID, path, next) { //Kubernetes service names are based
+ProxyRouter.prototype.kubernetesServiceLookup = function(req, res, userID, isWebsocket, path, next) { //Kubernetes service names are based
   var self = this;
 
   function createService(userID) {
@@ -60,7 +60,24 @@ ProxyRouter.prototype.kubernetesServiceLookup = function(userID, path, next) { /
           self.cache[userID][path] = target; //So you don't override other paths
           self.expire_route(userID, self.cache_ttl);
           var writeTarget = JSON.stringify(target);
-          self.client.hset(userID, path, writeTarget,function(){next(target);});
+          var cb = function(){
+            http.get({host: target.host , port: target.port, path: '/beaker'}, function(res){
+              const statusCode = res.statusCode;
+              res.on('end', function (chunk) {
+                if (statusCode !== 200 && statusCode !== 301 && !isWebsocket  ) {
+                  res.send(`<meta http-equiv="refresh" content="5" > <h3>Please wait while we start a container for you!</h3>`);
+                }
+                else{
+                  self.client.expire(userID, 86400); // Set expiration time for the key in the redis_cache
+                  next(target);
+                }
+              });
+            }).on('error', function(err) {
+              if(!isWebsocket)
+                 res.send(`<meta http-equiv="refresh" content="5" > <h3>Please wait while we start a container for you!</h3>`);
+            });
+          }
+          self.client.hset(userID, path, writeTarget,cb);
         }
     });
   };
@@ -83,57 +100,39 @@ ProxyRouter.prototype.kubernetesServiceLookup = function(userID, path, next) { /
   createService(userID);
 };
 
-ProxyRouter.prototype.lookup = function(userID, path, next) {
+ProxyRouter.prototype.lookup = function(req, res, userID, isWebsocket, path, next) {
   var self = this;
   if (!self.cache[userID] || !self.cache[userID][path]) {
-    //Check if the localOverride has been defined in the redis client
-    self.client.hget(userID, config.app.localOverride, function(err, data) {
-      if(data) { //If of "localOverride" check in redis client
+    //Check if the path has been defined in the redis client otherwise get it from kubernetes
+    self.client.hget(userID, path, function(err, data) {
+      if (data) {
         var target = JSON.parse(data);
         // Set cache and expiration
         if (self.cache[userID] === undefined)
           self.cache[userID] = { path: target }
         else
           self.cache[userID][path] = target;
-
         self.expire_route(userID, self.cache_ttl);
-        next(target);
+
+//        HTTP Get to kubernetes to check if the svc still exists
+//        Should check if its really the container of user ?
+        http.get({host: target.host , port: target.port, path: '/beaker'}, function(res){
+          const statusCode = res.statusCode;
+          if (statusCode !== 200 && statusCode !== 301  ) {
+            console.log(`Request on ${JSON.stringify(target)} Failed.\n` +
+                              `Status Code: ${statusCode}`);
+          }
+          res.on('end', function (chunk) {
+            next(target);
+          });
+        }).on('error', function(err) {
+             console.log(`HTTP get, checking availability of service, err ${err}`);
+             self.kubernetesServiceLookup(req, res, userID, isWebsocket, path, next);
+          });
       }
-      else {
-        //Else of localOverride has not been defined, check if the path has been defined in the redis client otherwise get it from kubernetes
-        self.client.hget(userID, path, function(err, data) {
-          if (data) {
-            var target = JSON.parse(data);
-            // Set cache and expiration
-            if (self.cache[userID] === undefined)
-              self.cache[userID] = { path: target }
-            else
-              self.cache[userID][path] = target;
-
-            self.expire_route(userID, self.cache_ttl);
-            //HTTP Get to kubernetes to check if the svc still exists
-            // Return target
-            //Should check if its really the container of user ?
-//              http.get({host: target.host + ':'+ target.port, path: '/'}, function(res){
-//                const statusCode = res.statusCode;
-//                if (statusCode !== 200) {
-//                  console.log(`Request on ${JSON.stringify(target)} Failed.\n` +
-//                                    `Status Code: ${statusCode}`);
-//                }
-//                res.on('end', function (chunk) {
-//                  next(target);
-//                });
-//              }).on('error', function(err) {
-//                   self.kubernetesServiceLookup(userID,path,next);
-//                });
-             next(target);
-
-          }
-          else { //Else of path check in redis client
-            //Lookup target from Kubernetes
-            self.kubernetesServiceLookup(userID,path,next);
-          }
-        });
+      else { //Else of path check in redis client
+        //Lookup target from Kubernetes
+        self.kubernetesServiceLookup(req, res, userID, isWebsocket, path, next);
       }
     });
   }

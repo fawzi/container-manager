@@ -7,7 +7,7 @@ const morgan = require('morgan');
 const cookieParser = require('cookie-parser')();
 const bodyParser = require('body-parser');
 const session = require('express-session');
-//const errorhandler = require('errorhandler');
+const errorHandler = require('errorhandler');
 
 const redis   = require("redis");
 const RedisStore = require('connect-redis')(session);
@@ -27,12 +27,15 @@ const client = redis.createClient(config.redis);
 const ProxyRouter = require('./app/ProxyRouter')(config,k8, k8component)
 const proxyRouter = new ProxyRouter({
   backend: client,
-  cache_ttl: 50
+  cache_ttl: 60
 });
 
 var app = express();
 
-
+if (env === 'development') {
+  // only use in development
+  app.use(errorHandler())
+}
 app.use(morgan('combined'));
 app.use(cookieParser);
 //NOTE: Bodyparser doesn't allow the Post request to be forwarded by the http-proxy. Careful before using it!!!
@@ -68,17 +71,13 @@ var extractURL = function(uri) {
     return { "uri": uri, "user": null }
 }
 
-function redirect(userID, path, next) {
+function redirect(req, res, userID, isWebsocket, path, next) {
   var sessID = (userID === undefined) ?  'unknownSess1' : userID;
   if(sessID == 'unknownSess1')  {
     console.log("#ERROR# session not initialized");
-    console.log("#sessID: " + sessID);
   }
-//    var route = {
-//      host: '192.168.99.100' ,
-//      port: 31382
-//    }
-  proxyRouter.lookup(sessID, path, function(route) {
+
+  proxyRouter.lookup(req, res, sessID, isWebsocket, path, function(route) {
     console.log('Looked up route:' + JSON.stringify(route));
     if (route) {
       try{
@@ -104,15 +103,15 @@ function redirect(userID, path, next) {
 const proxyServer = httpProxy.createProxyServer({});
 // Listen for the `error` event on `proxy`.
 proxyServer.on('error', function (err, req, response) {
-  try{
+/*  try{
     response.writeHead(500,{
       'Content-Type': 'text/plain'
     });
-    response.end('Something went wrong. And we are reporting a custom error message.');
+    response.end('Something went wrong.Please refresh otherwise try again later.');
   }
   catch(er){
     console.error("Proxy error: res.writeHead/res.end error: %s", er.message);
-  }
+  }*/
 });
 
 require('./config/routes')(app,redirect, config, proxyServer, proxyRouter, k8, passport, passportInit, passportSession);
@@ -121,16 +120,23 @@ var httpServer = http.createServer(app);
 httpServer.on('upgrade', function (req, socket, head) {
     cookieParser(req, {}, function() {
     var sessionID = req.cookies['connect.sid'];
-    console.log(sessionID);
     sessionManager(req, {}, function(){
-      console.log('Retrieved session: '+JSON.stringify(req.session, null, 2))
-      redirect(req.session.passport.user.id, '/beaker', function(route){
-        var wsSocket = 'ws://'+route.host +':'+ route.port + req.url;
-        console.log('Final websocket: ' +wsSocket);
-        proxyServer.ws(req, socket, head, { target: wsSocket });
-      });
+//      console.log('Retrieved session: '+JSON.stringify(req.session, null, 2))
+      try{
+        redirect( req, {}, req.session.passport.user.id, true, '/beaker', function(route){
+          var wsSocket = 'ws://'+route.host +':'+ route.port + req.url;
+  //        console.log('Final websocket: ' +wsSocket);
+          proxyServer.ws(req, socket, head, { target: wsSocket });
+        });
+      }
+      catch(er) {
+        console.error("Websocket forward error: %s", er.message);
+      }
     });
   });
 });
-httpServer.listen(80);
+httpServer.listen(config.app.port);
 
+process.on('uncaughtException', (err) => {
+  console.log("#ERROR# UncaughtException: " + err)
+});
