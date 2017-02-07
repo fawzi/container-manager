@@ -49,6 +49,7 @@ ProxyRouter.prototype.kubernetesServiceLookup = function(req, res, userID, isWeb
   };
 
   function getServicePort(userID) {
+      const reloadMsg = '<html><head><title>Starting up!</title><meta http-equiv="refresh" content="5" ></head><body><h3>Please wait while we start a container for you!</h3></body></html>';
     k8.ns(config.k8component.namespace).service.get('beaker-svc-'+userID,function(err, result) {
       if(err){
         console.log("#ERROR# Can't find service for the user: " + userID);
@@ -65,7 +66,7 @@ ProxyRouter.prototype.kubernetesServiceLookup = function(req, res, userID, isWeb
               const statusCode = res.statusCode;
               res.on('end', function (chunk) {
                 if (statusCode !== 200 && statusCode !== 301 && !isWebsocket  ) {
-                  res.send(`<meta http-equiv="refresh" content="5" > <h3>Please wait while we start a container for you!</h3>`);
+                  res.send(reloadMsg);
                 }
                 else{
                   self.client.expire(userID, 86400); // Set expiration time for the key in the redis_cache
@@ -74,7 +75,7 @@ ProxyRouter.prototype.kubernetesServiceLookup = function(req, res, userID, isWeb
               });
             }).on('error', function(err) {
               if(!isWebsocket)
-                 res.send(`<meta http-equiv="refresh" content="5" > <h3>Please wait while we start a container for you!</h3>`);
+                 res.send(reloadMsg);
             });
           }
           self.client.hset(userID, path, writeTarget,cb);
