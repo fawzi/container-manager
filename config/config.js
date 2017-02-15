@@ -5,7 +5,11 @@ module.exports = {
       name: 'Container per user manager',
       port: process.env.PORT || 80,
       secret: 'theTreeInFront',
-      localOverride: '/localoverride'
+      localOverride: '/localoverride',
+      maxErrorQueue: 10,
+      redisTimeout: 3600,
+      localCacheTimeout: 10,
+      pageReloadTime: 5
     },
     k8Api: {
       url: 'https://192.168.99.100:8443',
@@ -38,7 +42,11 @@ module.exports = {
       name: 'User container manager',
       port: process.env.PORT || 443,
       secret: 'theTreeInFrontIsReal',
-      localOverride: '/localoverride'
+      localOverride: '/localoverride',
+      maxErrorQueue: 5,
+      redisTimeout: 7200,
+      localCacheTimeout: 30,
+      pageReloadTime: 5
     },
     redis: {
       port: 6379,

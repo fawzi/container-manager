@@ -13,6 +13,7 @@ const redis   = require("redis");
 const RedisStore = require('connect-redis')(session);
 const httpProxy = require('http-proxy');
 const SamlStrategy = require('passport-saml').Strategy;
+const stringify = require('json-stringify-safe');
 
 var env = process.env.NODE_ENV || 'development';
 const config = require('./config/config')[env];
@@ -27,7 +28,7 @@ const client = redis.createClient(config.redis);
 const ProxyRouter = require('./app/ProxyRouter')(config,k8, k8component)
 const proxyRouter = new ProxyRouter({
   backend: client,
-  cache_ttl: 60
+  cache_ttl: 10
 });
 
 var app = express();
@@ -78,7 +79,7 @@ function redirect(req, res, userID, isWebsocket, path, next) {
   }
 
   proxyRouter.lookup(req, res, sessID, isWebsocket, path, function(route) {
-    console.log('Looked up route:' + JSON.stringify(route));
+    console.log('Looked up route:' + stringify(route));
     if (route) {
       try{
         next(route);
@@ -102,12 +103,13 @@ function redirect(req, res, userID, isWebsocket, path, next) {
 
 const proxyServer = httpProxy.createProxyServer({});
 // Listen for the `error` event on `proxy`.
-proxyServer.on('error', function (err, req, response) {
+proxyServer.on('error', function (err, req, res) {
+//The following will fail on websockets
 /*  try{
-    response.writeHead(500,{
+    res.writeHead(500,{
       'Content-Type': 'text/plain'
     });
-    response.end('Something went wrong.Please refresh otherwise try again later.');
+    res.end('Something went wrong.Please refresh otherwise try again later.');
   }
   catch(er){
     console.error("Proxy error: res.writeHead/res.end error: %s", er.message);
@@ -121,11 +123,9 @@ httpServer.on('upgrade', function (req, socket, head) {
     cookieParser(req, {}, function() {
     var sessionID = req.cookies['connect.sid'];
     sessionManager(req, {}, function(){
-//      console.log('Retrieved session: '+JSON.stringify(req.session, null, 2))
       try{
         redirect( req, {}, req.session.passport.user.id, true, '/beaker', function(route){
           var wsSocket = 'ws://'+route.host +':'+ route.port + req.url;
-  //        console.log('Final websocket: ' +wsSocket);
           proxyServer.ws(req, socket, head, { target: wsSocket });
         });
       }
