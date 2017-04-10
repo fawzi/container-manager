@@ -96,6 +96,19 @@ var createRcControllerConfig = function(user) {
                 {
                   "mountPath": "/home/beaker/notebooks",
                   "name": "notebooks-data-volume"
+                },
+                {
+                  "mountPath": config.userInfo.privateDirInContainer,
+                  "name": "private-data-volume"
+                },
+				{
+                  "mountPath": config.userInfo.sharedDirInContainer,
+                  "name": "shared-data-volume",
+                  "readOnly": true
+                },
+                {
+                  "mountPath": config.userInfo.mySharedDirInContainer,
+                  "name": "my-shared-data-volume"
                 }
               ]
             }
@@ -117,6 +130,18 @@ var createRcControllerConfig = function(user) {
             {
               "name": "notebooks-data-volume",
               "hostPath": { "path": "/nomad/nomadlab/beaker-notebooks/notebooks" }
+            },
+            {
+              "name": "private-data-volume",
+              "hostPath": { "path": config.userInfo.privateDir + '/' + user }
+            },
+            {
+              "name": "shared-data-volume",
+              "hostPath": { "path": config.userInfo.sharedDir }
+            },
+			{
+              "name": "my-shared-data-volume",
+              "hostPath": { "path": config.userInfo.sharedDir + '/' + user }
             }
           ]
         }
