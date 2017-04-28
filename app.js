@@ -1,6 +1,7 @@
 const express = require('express');
 
 const http = require('http');
+const https = require('https');
 const path = require('path');
 const passport = require('passport');
 const morgan = require('morgan');
@@ -8,42 +9,42 @@ const cookieParser = require('cookie-parser')();
 const bodyParser = require('body-parser');
 const session = require('express-session');
 const errorHandler = require('errorhandler');
-
 const redis   = require("redis");
 const RedisStore = require('connect-redis')(session);
 const httpProxy = require('http-proxy');
 const SamlStrategy = require('passport-saml').Strategy;
 const stringify = require('json-stringify-safe');
-
 var env = process.env.NODE_ENV || 'development';
 const config = require('./config/config')[env];
 console.log('Using configuration', config);
 
 require('./config/passport')(passport, config);
-
 const k8 = require('./app/kubernetes')(config);
 const k8component = require('./app/components')(config);
-
 const client = redis.createClient(config.redis);
 const ProxyRouter = require('./app/ProxyRouter')(config,k8, k8component)
 const proxyRouter = new ProxyRouter({
   backend: client,
   cache_ttl: 10
 });
-
+const mongoose = require('mongoose');
+mongoose.connect(config.mongoDb.url);
+const File = require('./app/models/file')( mongoose);
+const fileWatcher = require('./app/filesWatcher')(config, File);
 var app = express();
 
 if (env === 'development') {
   // only use in development
   app.use(errorHandler())
+  app.use(morgan('combined'));
 }
-app.use(morgan('combined'));
 app.use(cookieParser);
+
 //NOTE: Bodyparser doesn't allow the Post request to be forwarded by the http-proxy. Careful before using it!!!
 //This code is kept here to stop people from making a ridiculous error that's almost impossible to debug when used on the app.
 //app.use(bodyParser.json());
 //app.use(bodyParser.urlencoded({extended: true}));
-const store = new session.MemoryStore();
+
 const sessionManager = session(
                   {
                     store: new RedisStore({client: client}),
@@ -116,9 +117,20 @@ proxyServer.on('error', function (err, req, res) {
   }*/
 });
 
-require('./config/routes')(app,redirect, config, proxyServer, proxyRouter, k8, passport, passportInit, passportSession);
+require('./config/routes')(app,redirect, config, proxyServer, proxyRouter, k8, passport, passportInit, passportSession, File);
 
-var httpServer = http.createServer(app);
+var httpServer;
+if (env === 'development') {
+  httpServer = http.createServer(app);
+} else {
+  var fs = require('fs');
+  var httpsOptions = {
+    key: fs.readFileSync(config.app.ssl.key),
+    cert: fs.readFileSync(config.app.ssl.cert)
+  };
+  httpServer = https.createServer(httpsOptions, app);
+}
+
 httpServer.on('upgrade', function (req, socket, head) {
     cookieParser(req, {}, function() {
     var sessionID = req.cookies['connect.sid'];

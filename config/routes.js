@@ -4,7 +4,7 @@ const httpProxy = require('http-proxy');
 const fs = require('fs');
 const ensureLoggedIn = require('connect-ensure-login').ensureLoggedIn;
 const bodyParser = require('body-parser');
-module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, passport, passportInit, passportSession) {
+module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, passport, passportInit, passportSession, File) {
 
 
   function makeid(){
@@ -23,7 +23,16 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
       })
   );
 
-
+  
+  function setFrontendHeader() {
+  return function(req, res, next) {
+    res.setHeader('Access-Control-Allow-Origin', config.app.frontendAddr);
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    res.header('Access-Control-Allow-Methods', 'POST, GET, PUT, DELETE, OPTIONS');
+    next();
+  }
+}
+	
 //Passport SAML request is not accepted until the body is parsed. And since bodyParser can not used in the express app, it is called here separately.
   app.post(config.passport.saml.path,bodyParser.json(),bodyParser.urlencoded({extended: true}),
     passport.authenticate(config.passport.strategy,
@@ -33,7 +42,7 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
       }),
     function (req, res) {
      if (req.session && req.session.returnTo) {
-       res.redirect(req.session.returnTo);
+       res.redirect('/'); // req.session.returnTo can't be used as the partial path after # is not available to the backend
      } else {
         res.redirect('/')  ;
      }
@@ -67,6 +76,70 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
     else {
     console.log(`Not executing! ${JSON.stringify(req.query)}`)
     }
+  });
+
+  app.get('/userapi', function(req, res){
+    res.send('Working');
+  });
+
+  app.get('/userapi/files', setFrontendHeader(), function(req, res){
+    File.find({isPublic: true},function(err,files) {
+        if(err) {
+            res.send(err);
+        }
+        else {
+            res.send(files);
+        }
+    });
+  })
+
+
+  app.get('/userapi/files/:user', setFrontendHeader(), function(req, res){
+    File.find({user: req.params.user},function(err,files) {
+        if(err) {
+            res.send(err);
+        }
+        else {
+            res.send(files);
+        }
+    });
+  })
+
+  app.get('/userapi/files/:id', setFrontendHeader(), function(req, res){
+    File.find({id: req.params.id},function(err,files) {
+        if(err) {
+            res.send(err);
+        }
+        else {
+            res.send(files);
+        }
+    });
+  })
+  app.get('/userapi/users/:id', setFrontendHeader(), function(req, res){
+	  if(req.user === undefined || req.user.id === undefined) {
+	    res.send({users:{
+		  //type: "user",
+		  id: 1,
+		  userName:'You are not logged in',
+		  myNotebooks: [{title:'Sample1', link: '/Sample1.bkr'},{title:'Sample2', link: '/Sample2.bkr'},{title:'Sample3', link: '/Sample3.bkr'},{title:'Sample4', link: '/Sample4.bkr'},{title:'Sample5', link: '/Sample5.bkr'}],
+		  sharedNotebooks: [{title:'Sample1', link: '/Sample1.bkr'},{title:'Sample2', link: '/Sample2.bkr'}],
+		  cpuInfo: "Not available",
+		  diskInfo: "0 MB",
+		  status: "Not available"
+		}});
+	  }
+	 else {
+		 res.send({users:{
+		  //type: "user",
+		  id: 1,
+		  userName:req.user.id,
+		  myNotebooks: [{title:'Sample1', link: '/Sample1.bkr'},{title:'Sample2', link: '/Sample2.bkr'},{title:'Sample3', link: '/Sample3.bkr'},{title:'Sample4', link: '/Sample4'},{title:'Sample5', link: '/Sample5.bkr'}],
+		  sharedNotebooks: [{title:'Sample1', link: '/Sample1.bkr'},{title:'Sample2.bkr', link: '/Sample2.bkr'}],
+		  cpuInfo: "Not available",
+		  diskInfo: "0 MB",
+		  status: "Not available"
+		}});
+	 }
   });
 
   app.get('/nmdalive', function(req, res){

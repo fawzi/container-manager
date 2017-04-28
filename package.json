@@ -35,6 +35,7 @@
     "json-stringify-safe": "^5.0.1",
     "kubernetes-client": "^2.2.2",
     "memory-store": "0.0.1",
+    "mongoose": "^4.9.5",
     "morgan": "1.7.0",
     "nodemon": "1.9.2",
     "passport": "0.3.2",

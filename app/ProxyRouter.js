@@ -1,6 +1,6 @@
 const stringify = require('json-stringify-safe');
 const http = require('http');
-
+const fs = require('fs');
 module.exports = function (config, k8, k8component) {
 const reloadMsg = `<html><head><title>Starting up!</title><meta http-equiv="refresh" content="${config.app.pageReloadTime}" ></head><body><h3>Please wait while we start a container for you!</h3></body></html>`;
 var ProxyRouter = function(options) {
@@ -44,7 +44,17 @@ ProxyRouter.prototype.kubernetesServiceLookup = function(req, res, userID, isWeb
     });
   };
 
+  function createUserDir(userID){
+	if (!fs.existsSync(config.userInfo.sharedDir + '/' + userID)){
+		fs.mkdirSync(config.userInfo.sharedDir + '/' + userID);
+	}
+	if (!fs.existsSync(config.userInfo.privateDir + '/' + userID)){
+		fs.mkdirSync(config.userInfo.privateDir + '/' + userID);
+	}
+  }
+
   function createReplicationController(userID) {
+	//createUserDir(userID); Kubernetes should handle it
     k8.ns(config.k8component.namespace).replicationcontrollers.get('beaker-rc-'+userID, function(err, result) {
       if(err)
         k8.ns(config.k8component.namespace).replicationcontrollers.post({ body: k8component('replicationController', userID)}, function(err, result){
@@ -93,7 +103,6 @@ ProxyRouter.prototype.kubernetesServiceLookup = function(req, res, userID, isWeb
     });
   };
   function writeToDisk(userID){
-    const fs = require('fs');
     fs.writeFile("service.json", stringify(k8component('service', userID), null, 2), function(err) {
         if(err) {
             return console.log(err);
