@@ -88,7 +88,7 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
             res.send(err);
         }
         else {
-            res.send(files);
+            res.send({files:files});
         }
     });
   })
@@ -105,7 +105,7 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
     });
   })
 
-  app.get('/userapi/files/:id', setFrontendHeader(), function(req, res){
+      app.get('/userapi/files/:id', setFrontendHeader(), function(req, res){
     File.find({id: req.params.id},function(err,files) {
         if(err) {
             res.send(err);
@@ -116,30 +116,39 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
     });
   })
   app.get('/userapi/users/:id', setFrontendHeader(), function(req, res){
-	  if(req.user === undefined || req.user.id === undefined) {
-	    res.send({users:{
-		  //type: "user",
-		  id: 1,
-		  userName:'You are not logged in',
-		  myNotebooks: [{title:'Sample1', link: '/Sample1.bkr'},{title:'Sample2', link: '/Sample2.bkr'},{title:'Sample3', link: '/Sample3.bkr'},{title:'Sample4', link: '/Sample4.bkr'},{title:'Sample5', link: '/Sample5.bkr'}],
-		  sharedNotebooks: [{title:'Sample1', link: '/Sample1.bkr'},{title:'Sample2', link: '/Sample2.bkr'}],
-		  cpuInfo: "Not available",
-		  diskInfo: "0 MB",
-		  status: "Not available"
-		}});
-	  }
-	 else {
-		 res.send({users:{
-		  //type: "user",
-		  id: 1,
-		  userName:req.user.id,
-		  myNotebooks: [{title:'Sample1', link: '/Sample1.bkr'},{title:'Sample2', link: '/Sample2.bkr'},{title:'Sample3', link: '/Sample3.bkr'},{title:'Sample4', link: '/Sample4'},{title:'Sample5', link: '/Sample5.bkr'}],
-		  sharedNotebooks: [{title:'Sample1', link: '/Sample1.bkr'},{title:'Sample2.bkr', link: '/Sample2.bkr'}],
-		  cpuInfo: "Not available",
-		  diskInfo: "0 MB",
-		  status: "Not available"
-		}});
-	 }
+      File.find({isPublic: true}, null, {sort: {user: 1}}, function(err,files) {
+          if(err) {
+              res.send(err);
+          }
+          else {
+              if(req.user === undefined || req.user.id === undefined) {
+                res.send({users:{
+                  //type: "user",
+                  id: 1,
+                  userName:'You are not logged in',
+                  myNotebooks: [{title:'Sample1', link: '/Sample1.bkr'},{title:'Sample2', link: '/Sample2.bkr'},{title:'Sample3', link: '/Sample3.bkr'},{title:'Sample4', link: '/Sample4.bkr'},{title:'Sample5', link: '/Sample5.bkr'}],
+                  sharedNotebooks: [{title:'Sample1', link: '/Sample1.bkr'},{title:'Sample2', link: '/Sample2.bkr'}],
+                  cpuInfo: "Not available",
+                  diskInfo: "0 MB",
+                  status: "Not available",
+                  files:files
+                }});
+              }
+             else {
+                 res.send({users:{
+                  //type: "user",
+                  id: 1,
+                  userName:req.user.id,
+                  myNotebooks: [{title:'Sample1', link: '/Sample1.bkr'},{title:'Sample2', link: '/Sample2.bkr'},{title:'Sample3', link: '/Sample3.bkr'},{title:'Sample4', link: '/Sample4'},{title:'Sample5', link: '/Sample5.bkr'}],
+                  sharedNotebooks: [{title:'Sample1', link: '/Sample1.bkr'},{title:'Sample2.bkr', link: '/Sample2.bkr'}],
+                  cpuInfo: "Not available",
+                  diskInfo: "0 MB",
+                  status: "Not available",
+                  files:files
+                }});
+             }
+	      }
+      });
   });
 
   app.get('/nmdalive', function(req, res){

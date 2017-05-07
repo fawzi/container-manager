@@ -5,6 +5,7 @@ var Schema = mongoose.Schema;
 // create the tutorials Schema
 var fileSchema = new Schema({
   title: String,
+  filename: String,
   path: {
     type:String,
 	required: true,

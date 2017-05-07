@@ -19,7 +19,7 @@ module.exports = {
       url: 'https://192.168.99.100:8443',
       ca: process.env.HOME + '/.minikube/ca.crt',
       cert: process.env.HOME + '/.minikube/apiserver.crt',
-      key: process.env.HOME + '/Users/kari/.minikube/apiserver.key',
+      key: process.env.HOME + '/.minikube/apiserver.key',
       node: '192.168.99.100'
     },
     redis: {
