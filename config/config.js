@@ -10,16 +10,16 @@ module.exports = {
       redisTimeout: 3600,
       localCacheTimeout: 10,
       pageReloadTime: 5,
-      frontendAddr: 'http://172.24.131.117:4200'
+      frontendAddr: 'http://127.0.0.1:4200'
     },
     mongoDb: {
       url: 'mongodb://localhost/filedatabase'
     },
     k8Api: {
       url: 'https://192.168.99.100:8443',
-      ca: '/.minikube/ca.crt',
-      cert: '/.minikube/apiserver.crt',
-      key: '/.minikube/apiserver.key',
+      ca: process.env.HOME + '/.minikube/ca.crt',
+      cert: process.env.HOME + '/.minikube/apiserver.crt',
+      key: process.env.HOME + '/Users/kari/.minikube/apiserver.key',
       node: '192.168.99.100'
     },
     redis: {
@@ -43,13 +43,13 @@ module.exports = {
     userInfo: {
 	  basePathToWatch: process.env.HOME + '/NOMAD/dirToWatch',
       sharedDir: process.env.HOME + '/NOMAD/dirToWatch/public',
-      privateDir: process.env.HOME + '/NOMAD/dirToWatch/private'
+      privateDir: process.env.HOME + '/NOMAD/dirToWatch/private',
 	  privateDirInContainer: '/data/private',
 	  sharedDirInContainer: '/data/shared',
 	  mySharedDirInContainer: '/data/my-shared'
 	}
   },
-  production: {
+  labdev: {
     app: {
       name: 'User container manager',
       port: process.env.PORT || 443,
