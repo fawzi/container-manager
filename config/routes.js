@@ -121,32 +121,21 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
               res.send(err);
           }
           else {
-              if(req.user === undefined || req.user.id === undefined) {
-                res.send({users:{
-                  //type: "user",
-                  id: 1,
-                  userName:'You are not logged in',
-                  myNotebooks: [{title:'Sample1', link: '/Sample1.bkr'},{title:'Sample2', link: '/Sample2.bkr'},{title:'Sample3', link: '/Sample3.bkr'},{title:'Sample4', link: '/Sample4.bkr'},{title:'Sample5', link: '/Sample5.bkr'}],
-                  sharedNotebooks: [{title:'Sample1', link: '/Sample1.bkr'},{title:'Sample2', link: '/Sample2.bkr'}],
-                  cpuInfo: "Not available",
-                  diskInfo: "0 MB",
-                  status: "Not available",
-                  files:files
-                }});
-              }
-             else {
-                 res.send({users:{
-                  //type: "user",
-                  id: 1,
-                  userName:req.user.id,
-                  myNotebooks: [{title:'Sample1', link: '/Sample1.bkr'},{title:'Sample2', link: '/Sample2.bkr'},{title:'Sample3', link: '/Sample3.bkr'},{title:'Sample4', link: '/Sample4'},{title:'Sample5', link: '/Sample5.bkr'}],
-                  sharedNotebooks: [{title:'Sample1', link: '/Sample1.bkr'},{title:'Sample2.bkr', link: '/Sample2.bkr'}],
-                  cpuInfo: "Not available",
-                  diskInfo: "0 MB",
-                  status: "Not available",
-                  files:files
-                }});
-             }
+          let resp = {
+            users:{
+              //type: "user",
+              id: 1,
+              myNotebooks: [{title:'Sample1', link: '/Sample1.bkr'},{title:'Sample2', link: '/Sample2.bkr'},{title:'Sample3', link: '/Sample3.bkr'},{title:'Sample4', link: '/Sample4.bkr'},{title:'Sample5', link: '/Sample5.bkr'}],
+              cpuInfo: "Not available",
+              diskInfo: "0 MB",
+              status: "Not available",
+              sharedNotebooks:files
+            }
+          };
+          if(req.user &&  req.user.id ) {
+            resp.username = req.user.id;
+          }
+          res.send(resp);
 	      }
       });
   });

@@ -1,0 +1,52 @@
+{
+    "beaker": "2",
+    "evaluators": [
+        {
+            "name": "HTML",
+            "plugin": "HTML",
+            "view": {
+                "cm": {
+                    "mode": "htmlmixed"
+                }
+            }
+        },
+        {
+            "name": "JavaScript",
+            "plugin": "JavaScript",
+            "view": {
+                "cm": {
+                    "mode": "javascript",
+                    "background": "#FFE0F0"
+                }
+            },
+            "languageVersion": "ES2015"
+        }
+    ],
+    "cells": [
+        {
+            "id": "sectionRY0RmB",
+            "type": "section",
+            "title": "Title of the default notebook",
+            "level": 1,
+            "evaluatorReader": false,
+            "collapsed": false
+        },
+        {
+            "id": "markdownAHVPWq",
+            "type": "markdown",
+            "body": [
+                "Authors: Ankit Kariryaa"
+            ],
+            "evaluatorReader": false
+        },
+        {
+            "id": "markdownYQXLEq",
+            "type": "markdown",
+            "body": [
+                "Description: This is the default template to be used to build publicly parsable tutorials"
+            ],
+            "evaluatorReader": false
+        }
+    ],
+    "namespace": {}
+}

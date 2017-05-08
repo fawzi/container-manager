@@ -2,22 +2,10 @@
 module.exports = function(config, File){
 const chokidar = require('chokidar');
 const pathModule = require('path');
+const fs = require('fs');
 var watcher = chokidar.watch(config.userInfo.basePathToWatch+ '/**/*.bkr', {});
   watcher.on('add', (path,stats) => {
-    const posPublic = path.indexOf(config.userInfo.sharedDir);
-    if (posPublic > -1){
-      const isPublic = true;
-      let partialPath = path.substring(posPublic + config.userInfo.sharedDir.length + 1) // +1 to take care of the forward slash (/) in the path; posPublic should be 0, but added for surety
-      const user = partialPath.split('/',1)[0];
-      addNewFile(path, stats, isPublic, user)
-    }
-    else if(path.indexOf(config.userInfo.privateDir) > -1) {
-      const isPublic = false;
-      const posPrivate = path.indexOf(config.userInfo.privateDir);
-      let partialPath = path.substring(posPrivate + config.userInfo.privateDir.length + 1) // +1 to take care of the forward slash (/) in the path; posPublic should be 0, but added for surety
-      const user = partialPath.split('/',1)[0];
-      addNewFile(path, stats, isPublic, user)
-    }
+      addNewFile(path, stats)
   })
   .on('unlink', (path) =>  deleteFile(path))
   .on('ready', () => console.log('Initial scan complete. Ready for changes'))
@@ -37,7 +25,7 @@ function findByPath(path, next) {
   });
 }
 //TODO: Read File and add extra information
-function addNewFile(path, stats, isPublic, user) {
+function addNewFile(path, stats) {
   console.log('New file detected!' + path);
   findByPath(path, function (file) {
     if(!file){
@@ -51,7 +39,6 @@ function addNewFile(path, stats, isPublic, user) {
       user = partialPath.split('/',1)[0];
       linkPrefix = config.userInfo.sharedDirInContainer;
       toReplace = config.userInfo.sharedDir;
-      addNewFile(path, stats, isPublic, user)
     }
     else if(posPrivate > -1) {
       isPublic = false;
@@ -59,19 +46,37 @@ function addNewFile(path, stats, isPublic, user) {
       user = partialPath.split('/',1)[0];
       linkPrefix = config.userInfo.privateDirInContainer;
       toReplace = config.userInfo.privateDirInContainer;
-      addNewFile(path, stats, isPublic, user)
     }
-    var newFile = File({
-      path: path,
-      isPublic: isPublic,
-      user: user,
-      link: '/beaker/#/open?uri=' + path.replace(toReplace,linkPrefix),
-      filename: filename
-    });
-      // save the file
-    newFile.save(function(err) {
-      if (err) errorHandler(err);
-      console.log('Database entry added for the file: ' + path);
+    fs.readFile(path, 'utf8', function(err, contents) {
+     const tut = JSON.parse(contents);
+     let title = tut["cells"][0]["title"];
+     let authors = tut["cells"][1]["body"][0];
+     let description = tut["cells"][2]["body"][0];
+     console.log(title);
+     console.log(authors);
+     console.log(description);
+     let f = {
+        path: path,
+        isPublic: isPublic,
+        user: user,
+        link: '/beaker/#/open?uri=' + path.replace(toReplace,linkPrefix),
+        filename: filename
+       };
+       if(tut["cells"][0] && tut["cells"][0]["title"]) {
+         f.title = tut["cells"][0]["title"]
+       }
+       if(tut["cells"][1] && tut["cells"][1]["body"] && tut["cells"][1]["body"][0]) {
+         f.authors = tut["cells"][1]["body"][0].replace('Authors:','')
+       }
+       if(tut["cells"][2] && tut["cells"][2]["body"] && tut["cells"][2]["body"][0]) {
+         f.description = tut["cells"][2]["body"][0].replace('Description:','')
+       }
+       var newFile = File(f);
+       // save the file
+       newFile.save(function(err) {
+        if (err) errorHandler(err);
+        console.log('Database entry added for the file: ' + path);
+       });
     });
     }
   });
