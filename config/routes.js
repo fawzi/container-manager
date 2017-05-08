@@ -133,7 +133,7 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
             }
           };
           if(req.user &&  req.user.id ) {
-            resp.username = req.user.id;
+            resp.users.username = req.user.id;
           }
           res.send(resp);
 	      }
