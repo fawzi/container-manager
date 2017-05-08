@@ -79,7 +79,7 @@ ProxyRouter.prototype.kubernetesServiceLookup = function(req, res, userID, isWeb
   }
 
   function createReplicationController(userID) {
-	createUserDir(userID); //Kubernetes can handle it, but the permissions can be problamatic
+//	createUserDir(userID); //Kubernetes can handle it, but the permissions can be problamatic
     k8.ns(config.k8component.namespace).replicationcontrollers.get('beaker-rc-'+userID, function(err, result) {
       if(err)
         k8.ns(config.k8component.namespace).replicationcontrollers.post({ body: k8component('replicationController', userID)}, function(err, result){
