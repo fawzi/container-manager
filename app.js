@@ -80,7 +80,7 @@ function redirect(req, res, userID, isWebsocket, path, next) {
   }
 
   proxyRouter.lookup(req, res, sessID, isWebsocket, path, function(route) {
-    console.log('Looked up route:' + stringify(route));
+//    console.log('Looked up route:' + stringify(route));
     if (route) {
       try{
         next(route);
