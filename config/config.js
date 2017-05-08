@@ -63,7 +63,7 @@ module.exports = {
         key: '/certs/pkey.pem',
         cert: '/certs/cert-7741588557007104.pem'
       },
-      frontend: 'https://labdev-nomad.esc.rzg.mpg.de:4200'
+      frontendAddr: 'https://labdev-nomad.esc.rzg.mpg.de:4200'
     },
     mongoDb: {
       url: 'mongodb://labdev-nomad.esc.rzg.mpg.de/filedatabase'
@@ -113,7 +113,7 @@ module.exports = {
         cert: '/certs/nomad-coe.eu.crt.pem',
         key: '/certs/nomad-coe.eu.key.pem'
       },
-      frontend: 'https://analytics-toolkit.nomad-coe.eu:4200'
+      frontendAddr: 'https://analytics-toolkit.nomad-coe.eu:4200'
     },
 	mongoDb: {
       url: 'mongodb://analytics-toolkit.nomad-coe.eu/filedatabase'
