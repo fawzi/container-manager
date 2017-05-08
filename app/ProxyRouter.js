@@ -44,17 +44,42 @@ ProxyRouter.prototype.kubernetesServiceLookup = function(req, res, userID, isWeb
     });
   };
 
-  function createUserDir(userID){
+  function createUserDir(userID, next){
+  //Async version needs to be tested thorougly
+//  fs.access(config.userInfo.sharedDir + '/' + userID, fs.constants.F_OK | fs.constants.R_OK, (err) => {
+//    if(err){
+//      fs.mkdir(config.userInfo.sharedDir + '/' + userID, (err) => {
+//        if(err) throw err;
+//        fs.chown(config.userInfo.sharedDir + '/' + userID, 30828, 1000, (err) => {
+//          if(err) throw err;
+//          console.log('Dir correctly created:' + path);
+//        });
+//      });
+//    }
+//  });
+//  fs.access(config.userInfo.privateDir + '/' + userID, fs.constants.F_OK | fs.constants.R_OK, (err) => {
+//    if(err){
+//    fs.mkdir(config.userInfo.privateDir + '/' + userID, (err) => {
+//      if(err) throw err;
+//      fs.chown(config.userInfo.privateDir + '/' + userID, 30828, 1000, (err) => {
+//        if(err) throw err;
+//        console.log('Dir correctly created:' + path);
+//      });
+//    });
+//    }
+//  });
 	if (!fs.existsSync(config.userInfo.sharedDir + '/' + userID)){
-		fs.mkdirSync(config.userInfo.sharedDir + '/' + userID);
+		fs.mkdirSync(config.userInfo.sharedDir + '/' + userID, '2774');
+		fs.chownSync(config.userInfo.sharedDir + '/' + userID, 30828, 1000);
 	}
 	if (!fs.existsSync(config.userInfo.privateDir + '/' + userID)){
-		fs.mkdirSync(config.userInfo.privateDir + '/' + userID);
+		fs.mkdirSync(config.userInfo.privateDir + '/' + userID,'2774');
+		fs.chownSync(config.userInfo.privateDir + '/' + userID, 30828, 1000)
 	}
   }
 
   function createReplicationController(userID) {
-	//createUserDir(userID); Kubernetes should handle it
+	createUserDir(userID); //Kubernetes can handle it, but the permissions can be problamatic
     k8.ns(config.k8component.namespace).replicationcontrollers.get('beaker-rc-'+userID, function(err, result) {
       if(err)
         k8.ns(config.k8component.namespace).replicationcontrollers.post({ body: k8component('replicationController', userID)}, function(err, result){
