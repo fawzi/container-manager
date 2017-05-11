@@ -61,7 +61,7 @@ ProxyRouter.prototype.kubernetesServiceLookup = function(req, res, userID, isWeb
       });
       fs.access(config.userInfo.privateDir + '/' + userID, fs.constants.F_OK | fs.constants.R_OK, (err) => {
           if(err){
-              fs.mkdir(config.userInfo.privateDir + '/' + userID, (err) => {
+              fs.mkdir(config.userInfo.privateDir + '/' + userID, parseInt('2775', 8), (err) => {
                   if(err) throw err;
                   fs.chown(config.userInfo.privateDir + '/' + userID, 1000, 1000, (err) => {
                       if (err)
