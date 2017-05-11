@@ -46,36 +46,32 @@ ProxyRouter.prototype.kubernetesServiceLookup = function(req, res, userID, isWeb
 
   function createUserDir(userID, next){
   //Async version needs to be tested thorougly
-//  fs.access(config.userInfo.sharedDir + '/' + userID, fs.constants.F_OK | fs.constants.R_OK, (err) => {
-//    if(err){
-//      fs.mkdir(config.userInfo.sharedDir + '/' + userID, (err) => {
-//        if(err) throw err;
-//        fs.chown(config.userInfo.sharedDir + '/' + userID, 30828, 1000, (err) => {
-//          if(err) throw err;
-//          console.log('Dir correctly created:' + path);
-//        });
-//      });
-//    }
-//  });
-//  fs.access(config.userInfo.privateDir + '/' + userID, fs.constants.F_OK | fs.constants.R_OK, (err) => {
-//    if(err){
-//    fs.mkdir(config.userInfo.privateDir + '/' + userID, (err) => {
-//      if(err) throw err;
-//      fs.chown(config.userInfo.privateDir + '/' + userID, 30828, 1000, (err) => {
-//        if(err) throw err;
-//        console.log('Dir correctly created:' + path);
-//      });
-//    });
-//    }
-//  });
-	if (!fs.existsSync(config.userInfo.sharedDir + '/' + userID)){
-		fs.mkdirSync(config.userInfo.sharedDir + '/' + userID, '2774');
-		fs.chownSync(config.userInfo.sharedDir + '/' + userID, 30828, 1000);
-	}
-	if (!fs.existsSync(config.userInfo.privateDir + '/' + userID)){
-		fs.mkdirSync(config.userInfo.privateDir + '/' + userID,'2774');
-		fs.chownSync(config.userInfo.privateDir + '/' + userID, 30828, 1000)
-	}
+      fs.access(config.userInfo.sharedDir + '/' + userID, fs.constants.F_OK | fs.constants.R_OK, (err) => {
+          if(err){
+              fs.mkdir(config.userInfo.sharedDir + '/' + userID, parseInt('2775', 8), (err) => {
+                  if(err) throw err;
+                  fs.chown(config.userInfo.sharedDir + '/' + userID, 1000, 1000, (err) => {
+                      if (err)
+                          console.log('Dir '+ path + ' created, error in chown: ' + JSON.stringify(err));
+                      else
+                          console.log('Dir correctly created:' + path);
+                  });
+              });
+          }
+      });
+      fs.access(config.userInfo.privateDir + '/' + userID, fs.constants.F_OK | fs.constants.R_OK, (err) => {
+          if(err){
+              fs.mkdir(config.userInfo.privateDir + '/' + userID, (err) => {
+                  if(err) throw err;
+                  fs.chown(config.userInfo.privateDir + '/' + userID, 1000, 1000, (err) => {
+                      if (err)
+                          console.log('Dir '+ path + ' created, error in chown: ' + JSON.stringify(err));
+                      else
+                          console.log('Dir correctly created:' + path);
+                  });
+              });
+          }
+      });
   }
 
   function createReplicationController(userID) {

@@ -22,7 +22,8 @@ var fileSchema = new Schema({
 
 fileSchema.pre('save', function(next) {
   var currentDate = new Date();
-  this.updated_at = currentDate;
+  if (!this.updated_at)
+     this.updated_at = currentDate;
   if (!this.created_at)
     this.created_at = currentDate;
   next();

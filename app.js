@@ -30,7 +30,8 @@ const proxyRouter = new ProxyRouter({
 const mongoose = require('mongoose');
 mongoose.connect(config.mongoDb.url);
 const File = require('./app/models/file')( mongoose);
-const fileWatcher = require('./app/filesWatcher')(config, File);
+const ResourceUsage = require('./app/models/resource_usage')( mongoose);
+const fileWatcher = require('./app/filesWatcher')(config, File, ResourceUsage);
 var app = express();
 
 if (env === 'development') {

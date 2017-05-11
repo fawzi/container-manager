@@ -1,8 +1,10 @@
 'use strict';
-module.exports = function(config, File){
+module.exports = function(config, File, ResourceUsage){
 const chokidar = require('chokidar');
 const pathModule = require('path');
 const fs = require('fs');
+const getSize = require('get-folder-size');
+    
 var watcher = chokidar.watch(config.userInfo.basePathToWatch+ '/**/*.bkr', {});
   watcher.on('add', (path,stats) => {
       addNewFile(path, stats)
@@ -24,6 +26,52 @@ function findByPath(path, next) {
   next(file)
   });
 }
+
+function resourceUsage(username, next) {
+    ResourceUsage.findOne({user: username}, function(err, user) {
+  if (err) {
+    errorHandler(err);
+  }
+  next(user)
+  });
+}
+
+
+lastDiskUpdate = {}
+    
+function recomputeSize(username, mdate) {
+    resourceUsage(username, function (rUsage) {
+        if (username in lastDiskUpdate) {
+            if (lastDiskUpdate[username] > mdate)
+                return;
+        }
+        var currentDate = new Date();
+        if (!rUsage) {
+            lastDiskUpdate[username] = currentDate
+            let r = ResourceUsage({
+                user: username,
+                fileUsageLastUpdate: currentDate,
+                sharedStorageGB: getSize(config.userInfo.sharedDir + '/' + username),
+                privateStorageGB: getSize(config.userInfo.privateDir + '/' + username)
+                cpuUsage: 0.0,
+            })
+            r.save(function(err) {
+                if (err) errorHandler(err);
+                console.log('Disk usage added for the user: ' + username);
+            });
+        } else if (mdate >= rUsage.fileUsageLastUpdate) {
+            lastDiskUpdate[username] = currentDate
+            rUsage.fileUsageLastUpdate = currentDate,
+            rUsage.sharedStorageGB = getSize(config.userInfo.sharedDir + '/' + username),
+            rUsage.privateStorageGB = getSize(config.userInfo.privateDir + '/' + username)
+            rUsage.save(function(err) {
+                if (err) errorHandler(err);
+                console.log('Disk usage added for the user: ' + username);
+            })
+        }
+    })
+}
+    
 //TODO: Read File and add extra information
 function addNewFile(path, stats) {
   console.log('New file detected!' + path);
@@ -47,6 +95,7 @@ function addNewFile(path, stats) {
       linkPrefix = config.userInfo.privateDirInContainer;
       toReplace = config.userInfo.privateDirInContainer;
     }
+    
     fs.readFile(path, 'utf8', function(err, contents) {
      const tut = JSON.parse(contents);
      let title = tut["cells"][0]["title"];
@@ -71,6 +120,8 @@ function addNewFile(path, stats) {
        if(tut["cells"][2] && tut["cells"][2]["body"] && tut["cells"][2]["body"][0]) {
          f.description = tut["cells"][2]["body"][0].replace('Description:','')
        }
+       f.created_at = stats.ctime
+       f.updated_at = stats.mtime
        var newFile = File(f);
        // save the file
        newFile.save(function(err) {
