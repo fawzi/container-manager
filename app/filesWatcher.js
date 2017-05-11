@@ -37,7 +37,7 @@ function resourceUsage(username, next) {
 }
 
 
-lastDiskUpdate = {}
+let lastDiskUpdate = {}
     
 function recomputeSize(username, mdate) {
     resourceUsage(username, function (rUsage) {
@@ -52,8 +52,8 @@ function recomputeSize(username, mdate) {
                 user: username,
                 fileUsageLastUpdate: currentDate,
                 sharedStorageGB: getSize(config.userInfo.sharedDir + '/' + username),
-                privateStorageGB: getSize(config.userInfo.privateDir + '/' + username)
-                cpuUsage: 0.0,
+                privateStorageGB: getSize(config.userInfo.privateDir + '/' + username),
+                cpuUsage: 0.0
             })
             r.save(function(err) {
                 if (err) errorHandler(err);
@@ -94,34 +94,43 @@ function addNewFile(path, stats) {
       user = partialPath.split('/',1)[0];
       linkPrefix = config.userInfo.privateDirInContainer;
       toReplace = config.userInfo.privateDirInContainer;
+    } else {
+        console.log("Received invalid path " + path)
+        return;
     }
-    
     fs.readFile(path, 'utf8', function(err, contents) {
      const tut = JSON.parse(contents);
-     let title = tut["cells"][0]["title"];
-     let authors = tut["cells"][1]["body"][0];
-     let description = tut["cells"][2]["body"][0];
-     console.log(title);
-     console.log(authors);
-     console.log(description);
-     let f = {
+     var title, authors, description;
+     try {
+         title = tut["cells"][0]["title"];
+     } catch (err) {
+         if (filename.endsWith(".bkr"))
+             title = filename.slice(0, filename.length - 4)
+         else
+             title = filename
+     }
+     try {
+         authors = tut["cells"][1]["body"][0].replace('Authors:','')
+     } catch (err) {
+         authors = user
+     }
+     try {
+         description = tut["cells"][2]["body"][0].replace('Description:','');
+     } catch (err) {
+         description = ""
+     }
+      let f = {
         path: path,
         isPublic: isPublic,
         user: user,
         link: '/beaker/#/open?uri=' + path.replace(toReplace,linkPrefix),
-        filename: filename
+        filename: filename,
+        title: title,
+        authors: authors,
+        description: description,
+        created_at: stats.ctime,
+        updated_at: stats.mtime
        };
-       if(tut["cells"][0] && tut["cells"][0]["title"]) {
-         f.title = tut["cells"][0]["title"]
-       }
-       if(tut["cells"][1] && tut["cells"][1]["body"] && tut["cells"][1]["body"][0]) {
-         f.authors = tut["cells"][1]["body"][0].replace('Authors:','')
-       }
-       if(tut["cells"][2] && tut["cells"][2]["body"] && tut["cells"][2]["body"][0]) {
-         f.description = tut["cells"][2]["body"][0].replace('Description:','')
-       }
-       f.created_at = stats.ctime
-       f.updated_at = stats.mtime
        var newFile = File(f);
        // save the file
        newFile.save(function(err) {

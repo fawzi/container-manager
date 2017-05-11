@@ -6,7 +6,7 @@ var Schema = mongoose.Schema;
 var resourceSchema = new Schema({
     user: {
         type: String,
-        required: true
+        required: true,
         unique: true
     },
     fileUsageLastUpdate: Date,
@@ -16,9 +16,9 @@ var resourceSchema = new Schema({
     cpuUsage: Number,
 });
 
-var ResourceUsage = mongoose.model('ResourceUsage', fileSchema);
+var ResourceUsage = mongoose.model('ResourceUsage', resourceSchema);
 
-fileSchema.pre('save', function(next) {
+resourceSchema.pre('save', function(next) {
   var currentDate = new Date();
   if (!this.fileUsageLastUpdate)
      this.fileUsageLastUpdate = currentDate;
