@@ -44,33 +44,31 @@ ProxyRouter.prototype.kubernetesServiceLookup = function(req, res, userID, isWeb
     });
   };
 
-  function createUserDir(userID, next){
-  //Async version needs to be tested thorougly
-      fs.access(config.userInfo.sharedDir + '/' + userID, fs.constants.F_OK | fs.constants.R_OK, (err) => {
+  function guaranteeDir(path, next) {
+      fs.access(path, fs.constants.F_OK | fs.constants.R_OK, (err) => {
           if(err){
-              fs.mkdir(config.userInfo.sharedDir + '/' + userID, parseInt('2775', 8), (err) => {
+              fs.mkdir(path, parseInt('2775', 8), (err) => {
                   if(err) throw err;
-                  fs.chown(config.userInfo.sharedDir + '/' + userID, 1000, 1000, (err) => {
+                  fs.chown(path, 1000, 1000, (err) => {
                       if (err)
                           console.log('Dir '+ path + ' created, error in chown: ' + JSON.stringify(err));
                       else
                           console.log('Dir correctly created:' + path);
+                      next();
                   });
               });
+          } else {
+              next();
           }
       });
-      fs.access(config.userInfo.privateDir + '/' + userID, fs.constants.F_OK | fs.constants.R_OK, (err) => {
-          if(err){
-              fs.mkdir(config.userInfo.privateDir + '/' + userID, parseInt('2775', 8), (err) => {
-                  if(err) throw err;
-                  fs.chown(config.userInfo.privateDir + '/' + userID, 1000, 1000, (err) => {
-                      if (err)
-                          console.log('Dir '+ path + ' created, error in chown: ' + JSON.stringify(err));
-                      else
-                          console.log('Dir correctly created:' + path);
-                  });
-              });
-          }
+  }
+
+  function guaranteeUserDir(userID, next) {
+      //Async version needs to be tested thorougly
+      guaranteeDir(config.userInfo.sharedDir + '/' + userID, function() {
+          guaranteeDir(config.userInfo.privateDir + '/' + userID, function() {
+              next();
+          });
       });
   }
 
@@ -138,7 +136,7 @@ ProxyRouter.prototype.kubernetesServiceLookup = function(req, res, userID, isWeb
     });
   }
 //    writeToDisk(userID);
-  createService(userID);
+    guaranteeUserDir(userID, function() { createService(userID) });
 };
 // The decision could be made using the state machine instead of the
 ProxyRouter.prototype.lookup = function(req, res, userID, isWebsocket, path, next) {
