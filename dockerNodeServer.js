@@ -14,4 +14,4 @@ docker run -p 8801:443 --restart=unless-stopped  --name=node-manager-https --env
 
 #On analytics-toolkit or labtest-nomad; To be run from the folder where nodejs code is present
 
-docker run -p 8801:443  --restart=unless-stopped --name=analytics-node-manager --env PORT=443 --env NODE_ENV=analyticsToolkit -v /root/nomad-coe:/certs:ro -v $PWD:/usr/src/app -w /usr/src/app -v /nomad/nomadlab/beaker-notebooks/user-data:/nomad/nomadlab/beaker-notebooks/user-data:ro -d node:6 bash -c "npm install && npm start"
+docker run -p 8801:443  --restart=unless-stopped --name=analytics-node-manager --env PORT=443 --env NODE_ENV=analyticsToolkit -v /root/nomad-coe:/certs:ro -v $PWD:/usr/src/app -w /usr/src/app -v /nomad/nomadlab/beaker-notebooks/user-data:/nomad/nomadlab/beaker-notebooks/user-data -d node:6 bash -c "npm install && npm start"
