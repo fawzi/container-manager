@@ -138,7 +138,7 @@ module.exports = {
     },
     k8component: {
       namespace: 'default',
-      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.8.0-16-g2ac4412-dirty'
+      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.8.0-43-g1bcc6f9-dirty'
     },
     userInfo: {
 	  basePathToWatch: '/nomad/nomadlab/beaker-notebooks/user-data',
