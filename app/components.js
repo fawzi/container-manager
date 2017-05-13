@@ -101,13 +101,13 @@ var createRcControllerConfig = function(user) {
                   "mountPath": config.userInfo.privateDirInContainer,
                   "name": "private-data-volume"
                 },
-				{
+                {
                   "mountPath": config.userInfo.sharedDirInContainer,
                   "name": "shared-data-volume",
                   "readOnly": true
                 },
                 {
-                  "mountPath": config.userInfo.mySharedDirInContainer,
+                  "mountPath": config.userInfo.sharedDirInContainer + "/" + user,
                   "name": "my-shared-data-volume"
                 }
               ]
