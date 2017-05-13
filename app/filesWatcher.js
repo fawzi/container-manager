@@ -59,7 +59,7 @@ function recomputeSize(username, mdate) {
                 if (err) errorHandler(err);
                 console.log('Disk usage added for the user: ' + username);
             });
-        } else if (mdate >= rUsage.fileUsageLastUpdate) {
+        } else { // if (mdate >= rUsage.fileUsageLastUpdate) { // recalculate on startup...
             lastDiskUpdate[username] = currentDate
             rUsage.fileUsageLastUpdate = currentDate,
             rUsage.sharedStorageGB = getSize(config.userInfo.sharedDir + '/' + username),
