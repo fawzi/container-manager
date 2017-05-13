@@ -23,6 +23,10 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
       })
   );
 
+  app.get('/login/logout', function(req, res){
+    req.logout();
+    res.redirect('/login');
+  });
   
   function setFrontendHeader() {
   return function(req, res, next) {
