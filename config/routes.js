@@ -125,11 +125,12 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
               res.send(err);
           }
           else {
+              File.find({user: req.user.id}, null, {sort: {updated_at: 1}}, function(err, myFiles) {
           let resp = {
             users:{
               //type: "user",
               id: 1,
-              myNotebooks: [{title:'Sample1', link: '/Sample1.bkr'},{title:'Sample2', link: '/Sample2.bkr'},{title:'Sample3', link: '/Sample3.bkr'},{title:'Sample4', link: '/Sample4.bkr'},{title:'Sample5', link: '/Sample5.bkr'}],
+              myNotebooks: myFiles,
               cpuInfo: "Not available",
               diskInfo: "0 MB",
               status: "Not available",
@@ -140,7 +141,8 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
             resp.users.username = req.user.id;
           }
           res.send(resp);
-	      }
+	      });
+          }
       });
   });
 
