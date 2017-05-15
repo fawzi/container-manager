@@ -5,7 +5,9 @@ const pathModule = require('path');
 const fs = require('fs');
 const getSize = require('get-folder-size');
     
-var watcher = chokidar.watch(config.userInfo.basePathToWatch+ '/**/*.bkr', {});
+var watcher = chokidar.watch(config.userInfo.basePathToWatch+ '/**/*.bkr', {
+    usePolling: true
+});
   watcher.on('add', (path,stats) => {
       addNewFile(path, stats)
   })
