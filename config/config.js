@@ -38,7 +38,7 @@ module.exports = {
     },
     k8component: {
       namespace: 'default',
-      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.4.0-77-g020d545'
+      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.8.0-45-g3d3785f-dirty'
     },
     userInfo: {
 	  basePathToWatch: process.env.HOME + '/NOMAD/dirToWatch',
@@ -88,7 +88,7 @@ module.exports = {
     },
     k8component: {
       namespace: 'default',
-      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.8.0-16-g2ac4412-dirty'
+      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.8.0-45-g3d3785f-dirty'
     },    
     userInfo: {
 	  basePathToWatch: '/nomad/nomadlab/beaker-notebooks/user-data',
@@ -138,7 +138,7 @@ module.exports = {
     },
     k8component: {
       namespace: 'default',
-      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.8.0-44-g14a5700-dirty'
+      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.8.0-45-g3d3785f-dirty'
     },
     userInfo: {
 	  basePathToWatch: '/nomad/nomadlab/beaker-notebooks/user-data',
