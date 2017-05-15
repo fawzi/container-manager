@@ -47,29 +47,65 @@ function recomputeSize(username, mdate) {
         }
         var currentDate = new Date();
         if (!rUsage) {
-            lastDiskUpdate[username] = currentDate
-            let r = ResourceUsage({
-                user: username,
-                fileUsageLastUpdate: currentDate,
-                sharedStorageGB: getSize(config.userInfo.sharedDir + '/' + username),
-                privateStorageGB: getSize(config.userInfo.privateDir + '/' + username),
-                cpuUsage: 0.0
-            })
-            r.save(function(err) {
-                if (err) errorHandler(err);
-                console.log('Disk usage added for the user: ' + username);
+            getSize(config.userInfo.sharedDir + '/' + username, function(err, sharedSize) {
+                var sharedSizeGB;
+                if (err) {
+                    console.log(`Could not compute size of ${config.userInfo.sharedDir + '/' + username} due to ${err}`);
+                    sharedSizeGB = -1;
+                } else {
+                    sharedSizeGB = sharedSize / (1024.0*1024.0*1024.0);
+                }
+                getSize(config.userInfo.privateDir + '/' + username, function(err, privateSize) {
+                    var privateSizeGB;
+                    if (err) {
+                        console.log(`Could not compute size of ${config.userInfo.privateDir + '/' + username} due to ${err}`);
+                        privateSizeGB = -1;
+                    } else {
+                        privateSizeGB = privateSize / (1024.0*1024.0*1024.0);
+                    }
+                    lastDiskUpdate[username] = currentDate
+                    let r = ResourceUsage({
+                        user: username,
+                        fileUsageLastUpdate: currentDate,
+                        sharedStorageGB: sharedSizeGB,
+                        privateStorageGB: privateSizeGB,
+                        cpuUsage: 0.0
+                    })
+                    r.save(function(err) {
+                        if (err) errorHandler(err);
+                        console.log('Disk usage added for the user: ' + username);
+                    });
+                });
             });
-        } else { // if (mdate >= rUsage.fileUsageLastUpdate) { // recalculate on startup...
-            lastDiskUpdate[username] = currentDate
-            rUsage.fileUsageLastUpdate = currentDate,
-            rUsage.sharedStorageGB = getSize(config.userInfo.sharedDir + '/' + username),
-            rUsage.privateStorageGB = getSize(config.userInfo.privateDir + '/' + username)
-            rUsage.save(function(err) {
-                if (err) errorHandler(err);
-                console.log('Disk usage added for the user: ' + username);
-            })
+        } else { // if (mdate >= rUsage.fileUsageLastUpdate) { // always recalculate all on startup
+            getSize(config.userInfo.sharedDir + '/' + username, function(err, sharedSize) {
+                var sharedSizeGB;
+                if (err) {
+                    console.log(`Could not compute size of ${config.userInfo.sharedDir + '/' + username} due to ${err}`);
+                    sharedSizeGB = -1;
+                } else {
+                    sharedSizeGB = sharedSize / (1024.0*1024.0*1024.0);
+                }
+                getSize(config.userInfo.privateDir + '/' + username, function(err, privateSize) {
+                    var privateSizeGB;
+                    if (err) {
+                        console.log(`Could not compute size of ${config.userInfo.privateDir + '/' + username} due to ${err}`);
+                        privateSizeGB = -1;
+                    } else {
+                        privateSizeGB = privateSize / (1024.0*1024.0*1024.0);
+                    }
+                    lastDiskUpdate[username] = currentDate;
+                    rUsage.fileUsageLastUpdate = currentDate;
+                    rUsage.sharedStorageGB = sharedStorageGB;
+                    rUsage.privateStorageGB = privateStorageGB;
+                    rUsage.save(function(err) {
+                        if (err) errorHandler(err);
+                        console.log('Disk usage updated for user: ' + username);
+                    });
+                });
+            });
         }
-    })
+    });
 }
     
 //TODO: Read File and add extra information
@@ -152,6 +188,8 @@ function deleteFile(path) {
 
 //TODO: Handles the changes to the files
 function changeFile(path,stats) {
+    console.log('File change!' + path);
+    addNewFile(path, stats)
 }
 }
 

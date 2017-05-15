@@ -4,7 +4,7 @@ module.exports = function(mongoose) {
 var Schema = mongoose.Schema;
 // create the tutorials Schema
 var resourceSchema = new Schema({
-    user: {
+    username: {
         type: String,
         required: true,
         unique: true
