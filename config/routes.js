@@ -4,7 +4,7 @@ const httpProxy = require('http-proxy');
 const fs = require('fs');
 const ensureLoggedIn = require('connect-ensure-login').ensureLoggedIn;
 const bodyParser = require('body-parser');
-module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, passport, passportInit, passportSession, File) {
+module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, passport, passportInit, passportSession, File, ResourceUsage) {
 
 
   function makeid(){
@@ -120,27 +120,36 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
     });
   })
   app.get('/userapi/users/:id', setFrontendHeader(), function(req, res){
-      File.find({isPublic: true}, null, {sort: {user: 1}}, function(err,files) {
+      var myUsername;
+      if(req.user &&  req.user.id )
+          myUserName = req.user.id;
+      File.find({isPublic: true}, null, {sort: "user -updated_at"}, function(err,files) {
           if(err) {
               res.send(err);
-          }
-          else {
-              File.find({user: req.user.id}, null, {sort: {updated_at: 1}}, function(err, myFiles) {
-          let resp = {
-            users:{
-              //type: "user",
-              id: 1,
-              myNotebooks: myFiles,
-              cpuInfo: "Not available",
-              diskInfo: "0 MB",
-              status: "Not available",
-              sharedNotebooks:files
-            }
-          };
-          if(req.user &&  req.user.id ) {
-            resp.users.username = req.user.id;
-          }
-          res.send(resp);
+          } else {
+              File.find({user: myUserName}, null, {sort: {updated_at: -1}}, function(err, myFiles) {
+                  if(err) {
+                      res.send(err);
+                  } else {
+                      ResourceUsage.findOne({username: myUserName}, null,{}, function(err, rUsage) {
+                          console.log("rUsage: "+ JSON.stringify(rUsage))
+                          let resp = {
+                              users:{
+                                  //type: "user",
+                                  id: 1,
+                                  myNotebooks: myFiles,
+                                  cpuInfo: "Not available",
+                                  diskInfo: "0 MB",
+                                  status: "Not available",
+                                  sharedNotebooks:files
+                              }
+                          }
+                          if(req.user &&  req.user.id ) {
+                              resp.users.username = req.user.id;
+                          }
+                          res.send(resp);
+                      });
+                  }
 	      });
           }
       });

@@ -118,7 +118,7 @@ proxyServer.on('error', function (err, req, res) {
   }*/
 });
 
-require('./config/routes')(app,redirect, config, proxyServer, proxyRouter, k8, passport, passportInit, passportSession, File);
+require('./config/routes')(app,redirect, config, proxyServer, proxyRouter, k8, passport, passportInit, passportSession, File, ResourceUsage);
 
 var httpServer;
 if (env === 'development') {
