@@ -8,9 +8,11 @@ var fileSchema = new Schema({
   filename: String,
   path: {
     type:String,
-	required: true,
+    required: true,
     unique: true
   },
+  pathInContainer: String,
+  partialPath: String,
   authors: String,
   link: String,
   isPublic: Boolean,
