@@ -35,7 +35,7 @@
             "id": "markdownAHVPWq",
             "type": "markdown",
             "body": [
-                "Authors: Ankit Kariryaa"
+                "Authors: A NOMAD User"
             ],
             "evaluatorReader": false
         },
@@ -43,7 +43,7 @@
             "id": "markdownYQXLEq",
             "type": "markdown",
             "body": [
-                "Description: This is the default template to be used to build publicly parsable tutorials"
+                "Description: This is the default template to be used to build a notebook from which the title, authors and description are automatically extracted."
             ],
             "evaluatorReader": false
         }
