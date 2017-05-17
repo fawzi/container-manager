@@ -119,34 +119,36 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
     });
   })
   
-  app.get('/userapi/users/:id', setFrontendHeader(), function(req, res){
-    var myUsername;
-    if (req.user &&  req.user.id)
-      myUserName = req.user.id;
+  app.get('/userapi/users/:username', setFrontendHeader(), function(req, res){
     File.find({isPublic: true}, null, {sort: "user -updated_at"}, function(err,files) {
       if(err) {
         res.send(err);
       } else {
-        File.find({user: myUserName}, null, {sort: {updated_at: -1}}, function(err, myFiles) {
+        let username = req.params.username
+        if (req.user &&  req.user.id && username == req.user.id)
+          query = { user: username }
+        else
+          query = { user: username, isPublic: true}
+        File.find(query, null, {sort: {updated_at: -1}}, function(err, myFiles) {
           if(err) {
             res.send(err);
           } else {
-            ResourceUsage.findOne({username: myUserName}, null,{}, function(err, rUsage) {
+            ResourceUsage.findOne({username: username}, null,{}, function(err, rUsage) {
               console.log("rUsage: "+ JSON.stringify(rUsage))
               let resp = {
                 users:{
-                  //type: "user",
-                  id: 1,
+                  type: "user",
+                  username: username,
                   myNotebooks: myFiles,
-                  cpuInfo: "Not available",
-                  diskInfo: "0 MB",
-                  status: "Not available",
                   sharedNotebooks:files
                 }
               }
               if(req.user &&  req.user.id ) {
                 resp.users.username = req.user.id;
               }
+              if (rUsage)
+                for (let k in rUsage)
+                  resp.users[k] = rUsage[k]
               res.send(resp);
             });
           }
