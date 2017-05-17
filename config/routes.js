@@ -6,7 +6,6 @@ const ensureLoggedIn = require('connect-ensure-login').ensureLoggedIn;
 const bodyParser = require('body-parser');
 module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, passport, passportInit, passportSession, File, ResourceUsage) {
 
-
   function makeid(){
     var text = "";
     var possible = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -16,42 +15,42 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
   }
 
   app.get('/login',
-    passport.authenticate(config.passport.strategy,
-      {
-        successReturnToOrRedirect: '/',
-        failureRedirect: '/login'
-      })
-  );
+          passport.authenticate(config.passport.strategy,
+                                {
+                                  successReturnToOrRedirect: '/',
+                                  failureRedirect: '/login'
+                                })
+         );
 
   app.get('/login/logout', function(req, res){
     req.logout();
-    res.redirect('/login');
+    res.redirect('/');
   });
   
   function setFrontendHeader() {
-  return function(req, res, next) {
-    res.setHeader('Access-Control-Allow-Origin', config.app.frontendAddr);
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-    res.header('Access-Control-Allow-Methods', 'POST, GET, PUT, DELETE, OPTIONS');
-    next();
-  }
-}
-	
-//Passport SAML request is not accepted until the body is parsed. And since bodyParser can not used in the express app, it is called here separately.
-  app.post(config.passport.saml.path,bodyParser.json(),bodyParser.urlencoded({extended: true}),
-    passport.authenticate(config.passport.strategy,
-      {
-        failureRedirect: '/',
-        failureFlash: true
-      }),
-    function (req, res) {
-     if (req.session && req.session.returnTo) {
-       res.redirect('/'); // req.session.returnTo can't be used as the partial path after # is not available to the backend
-     } else {
-        res.redirect('/')  ;
-     }
+    return function(req, res, next) {
+      res.setHeader('Access-Control-Allow-Origin', config.app.frontendAddr);
+      res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+      res.header('Access-Control-Allow-Methods', 'POST, GET, PUT, DELETE, OPTIONS');
+      next();
     }
-  );
+  }
+  
+  //Passport SAML request is not accepted until the body is parsed. And since bodyParser can not used in the express app, it is called here separately.
+  app.post(config.passport.saml.path,bodyParser.json(),bodyParser.urlencoded({extended: true}),
+           passport.authenticate(config.passport.strategy,
+                                 {
+                                   failureRedirect: '/',
+                                   failureFlash: true
+                                 }),
+           function (req, res) {
+             if (req.session && req.session.returnTo) {
+               res.redirect('/'); // req.session.returnTo can't be used as the partial path after # is not available to the backend
+             } else {
+               res.redirect('/')  ;
+             }
+           }
+          );
 
   app.get(config.app.localOverride,ensureLoggedIn('/login'),function (req, res) {
     var userID = (req.user.id === undefined) ?  'unknownSess1' : req.user.id;
@@ -78,7 +77,7 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
       });
     }
     else {
-    console.log(`Not executing! ${JSON.stringify(req.query)}`)
+      console.log(`Not executing! ${JSON.stringify(req.query)}`)
     }
   });
 
@@ -88,71 +87,72 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
 
   app.get('/userapi/files', setFrontendHeader(), function(req, res){
     File.find({isPublic: true},function(err,files) {
-        if(err) {
-            res.send(err);
-        }
-        else {
-            res.send({files:files});
-        }
+      if(err) {
+        res.send(err);
+      }
+      else {
+        res.send({files:files});
+      }
     });
   })
 
 
   app.get('/userapi/files/:user', setFrontendHeader(), function(req, res){
     File.find({user: req.params.user},function(err,files) {
-        if(err) {
-            res.send(err);
-        }
-        else {
-            res.send(files);
-        }
+      if(err) {
+        res.send(err);
+      }
+      else {
+        res.send(files);
+      }
     });
   })
 
-      app.get('/userapi/files/:id', setFrontendHeader(), function(req, res){
+  app.get('/userapi/files/:id', setFrontendHeader(), function(req, res){
     File.find({id: req.params.id},function(err,files) {
-        if(err) {
-            res.send(err);
-        }
-        else {
-            res.send(files);
-        }
+      if(err) {
+        res.send(err);
+      }
+      else {
+        res.send(files);
+      }
     });
   })
+  
   app.get('/userapi/users/:id', setFrontendHeader(), function(req, res){
-      var myUsername;
-      if(req.user &&  req.user.id )
-          myUserName = req.user.id;
-      File.find({isPublic: true}, null, {sort: "user -updated_at"}, function(err,files) {
+    var myUsername;
+    if (req.user &&  req.user.id)
+      myUserName = req.user.id;
+    File.find({isPublic: true}, null, {sort: "user -updated_at"}, function(err,files) {
+      if(err) {
+        res.send(err);
+      } else {
+        File.find({user: myUserName}, null, {sort: {updated_at: -1}}, function(err, myFiles) {
           if(err) {
-              res.send(err);
+            res.send(err);
           } else {
-              File.find({user: myUserName}, null, {sort: {updated_at: -1}}, function(err, myFiles) {
-                  if(err) {
-                      res.send(err);
-                  } else {
-                      ResourceUsage.findOne({username: myUserName}, null,{}, function(err, rUsage) {
-                          console.log("rUsage: "+ JSON.stringify(rUsage))
-                          let resp = {
-                              users:{
-                                  //type: "user",
-                                  id: 1,
-                                  myNotebooks: myFiles,
-                                  cpuInfo: "Not available",
-                                  diskInfo: "0 MB",
-                                  status: "Not available",
-                                  sharedNotebooks:files
-                              }
-                          }
-                          if(req.user &&  req.user.id ) {
-                              resp.users.username = req.user.id;
-                          }
-                          res.send(resp);
-                      });
-                  }
-	      });
+            ResourceUsage.findOne({username: myUserName}, null,{}, function(err, rUsage) {
+              console.log("rUsage: "+ JSON.stringify(rUsage))
+              let resp = {
+                users:{
+                  //type: "user",
+                  id: 1,
+                  myNotebooks: myFiles,
+                  cpuInfo: "Not available",
+                  diskInfo: "0 MB",
+                  status: "Not available",
+                  sharedNotebooks:files
+                }
+              }
+              if(req.user &&  req.user.id ) {
+                resp.users.username = req.user.id;
+              }
+              res.send(resp);
+            });
           }
-      });
+	});
+      }
+    });
   });
 
   app.get('/nmdalive', function(req, res){
@@ -160,8 +160,8 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
   });
 
   app.all('/*', ensureLoggedIn('/login'),function (req, res) {
-//  res.send(`<meta http-equiv="refresh" content="5" > <h3>Please wait while we start a container for you!</h3>`);
-//    console.log('Retrieved session: '+JSON.stringify(req.session, null, 2))
+    //  res.send(`<meta http-equiv="refresh" content="5" > <h3>Please wait while we start a container for you!</h3>`);
+    //    console.log('Retrieved session: '+JSON.stringify(req.session, null, 2))
     redirect(req, res, req.user.id, false, '/beaker', function(route){
       proxyServer.web(req, res,{
         target: route
