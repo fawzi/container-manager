@@ -118,47 +118,95 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
       }
     });
   })
+
+  function selfUserName(req) {
+    var selfName;
+    try {
+      selfName = req.user.id;
+    } catch(e) {
+      selfName = ''
+    }
+    return selfName
+  }
+
+  function userInfo(username, selfName, next) {
+    var query;
+    if (selfName && username == selfName)
+      query = { user: selfName };
+    else
+      query = { user: username, isPublic: true};
+    File.find(query, null, {sort: {updated_at: -1}}, function(err, myFiles) {
+      if(err) {
+        next(err);
+      } else {
+        ResourceUsage.findOne({username: username}, null,{}, function(err, rUsage) {
+          let user = {
+            type: "user",
+            username: username,
+            myNotebooks: myFiles
+          }
+          if (rUsage) {
+            for (let k in ['fileUsageLastUpdate','privateStorageGB','sharedStorageGB','cpuUsageLastUpdate', 'cpuUsage'])
+              user[k] = rUsage[k]
+          }
+          next(null, {
+            'self': selfName,
+            'user': user
+          });
+        });
+      }
+    });
+  }
   
-  app.get('/userapi/users/:username', setFrontendHeader(), function(req, res){
+  app.get('/userapi/self', setFrontendHeader(), function(req, res){
     File.find({isPublic: true}, null, {sort: "user -updated_at"}, function(err,files) {
       if(err) {
         res.send(err);
       } else {
-        let username = req.params.username
-        if (req.user &&  req.user.id && username == req.user.id)
-          query = { user: username }
-        else
-          query = { user: username, isPublic: true}
-        File.find(query, null, {sort: {updated_at: -1}}, function(err, myFiles) {
-          if(err) {
-            res.send(err);
+        let username = selfUserName(req)
+        if (!username) {
+          res.send({
+            self:'',
+            user:{}
+          })
+          return;
+        }
+        userInfo(username, username, function(err, userInfo) {
+          if (err) {
+            res.send(err)
           } else {
-            ResourceUsage.findOne({username: username}, null,{}, function(err, rUsage) {
-              console.log("rUsage: "+ JSON.stringify(rUsage))
-              let resp = {
-                users:{
-                  type: "user",
-                  username: username,
-                  myNotebooks: myFiles,
-                  sharedNotebooks:files
-                }
-              }
-              if(req.user &&  req.user.id ) {
-                resp.users.username = req.user.id;
-              }
-              if (rUsage)
-                for (let k in rUsage)
-                  resp.users[k] = rUsage[k]
-              res.send(resp);
-            });
+            userInfo.user.sharedNotebooks = files
+            res.send(userInfo);
           }
 	});
       }
     });
   });
 
+  app.get('/userapi/whoami', setFrontendHeader(), function(req, res){
+    res.send(selfUserName(req))
+  });
+
+  app.get('/userapi/users/:username', setFrontendHeader(), function(req, res){
+    var selfName = selfUserName(req)
+    let username = req.params.username;
+    userInfo(username, selfName, function(err, userInfo) {
+      if (err) {
+        res.send(err)
+      } else {
+        res.send(userInfo);
+      }
+    });
+  });
+
   app.get('/nmdalive', function(req, res){
     res.send("<div>Hello2!!</div>");
+  });
+
+  app.get('/notebook-edit/*', function(req, res){
+    const target = 'https://labdev-nomad.esc.rzg.mpg.de/beaker/#/open?uri=' + req.url.slice(14, req.url.length).replace("/","%2F")
+    console.log(`notebook-edit redirecting to ${target}`)
+    res.redirect(302, target);
   });
 
   app.all('/*', ensureLoggedIn('/login'),function (req, res) {

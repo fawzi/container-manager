@@ -2,7 +2,7 @@
 
 module.exports = function(mongoose) {
 var Schema = mongoose.Schema;
-// create the tutorials Schema
+
 var resourceSchema = new Schema({
     username: {
         type: String,
@@ -17,15 +17,6 @@ var resourceSchema = new Schema({
 });
 
 var ResourceUsage = mongoose.model('ResourceUsage', resourceSchema);
-
-resourceSchema.pre('save', function(next) {
-  var currentDate = new Date();
-  if (!this.fileUsageLastUpdate)
-     this.fileUsageLastUpdate = currentDate;
-  if (!this.cpuUsageLastUpdate)
-    this.cpuUsageLastUpdate = currentDate;
-  next();
-});
 
 return(ResourceUsage);
 };
