@@ -19,6 +19,14 @@ module.exports = function(mongoose) {
     }
   }
 
+  // returns a res object id of a resource object
+  function resId(resObj) {
+    return {
+      type: resObj.type,
+      id: resObj.id
+    }
+  }
+
   // returns a json api resource object identifier for a resource usage
   function rusageResId(rusage) {
     return {
@@ -50,7 +58,7 @@ module.exports = function(mongoose) {
           next(null, { data: null })
         }
       } else {
-        next(null, rusageResObj)
+        next(null, rusageResObj(rusage))
       }
     });
   }

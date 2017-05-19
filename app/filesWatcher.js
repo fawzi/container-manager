@@ -1,5 +1,5 @@
 'use strict';
-module.exports = function(config, models){
+module.exports = function(env, config, models){
   const chokidar = require('chokidar');
   const pathModule = require('path');
   const fs = require('fs');
@@ -60,13 +60,13 @@ module.exports = function(config, models){
   // if mdate is after the last time the size was recomputed
   function recomputeSize(username, mdate) {
     var currentDate = new Date();
-    console.log(`recomputing size for ${username} ${mdate}`)
     if (username in lastDiskUpdate) {
       if (lastDiskUpdate[username] > mdate)
         return;
     } else {
       lastDiskUpdate[username] = currentDate
     }
+    console.log(`recomputing size for ${username} ${mdate}`)
     getSize(config.userInfo.sharedDir + '/' + username, function(err, sharedSize) {
       var sharedSizeGB;
       if (err) {
@@ -91,19 +91,25 @@ module.exports = function(config, models){
           cpuUsage: 0.0
         }
         console.log(`Did compute size: ${JSON.stringify(rd)}`)
-        models.getRusage(username, function (rUsage) {
-          var toUpdate;
-          if (rUsage) {
-            for (let k in rUsage)
-              rUsage[k] = rUsage[k]
-            toUpdate = rUsage
+        models.Rusage.findOne({ username: username }, null, function (err, rUsage) {
+          if (err) {
+            console.log(`Error: could not fetch old disk usage for ${username} due to ${err}`);
           } else {
-            toUpdate = new Rusage(rd)
+            var toUpdate;
+            if (rUsage) {
+              for (let k in rd)
+                rUsage[k] = rd[k]
+              toUpdate = rUsage
+            } else {
+              toUpdate = new Rusage(rd)
+            }
+            toUpdate.save(function(err) {
+              if (err)
+                console.log(`Error: could not save disk usage for ${username} due to ${err}`);
+              else
+                console.log('Disk usage added for the user: ' + username);
+            });
           }
-          toUpdate.save(function(err) {
-            if (err) errorHandler(err);
-            console.log('Disk usage added for the user: ' + username);
-          });
         })
       });
     });

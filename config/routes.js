@@ -1,6 +1,3 @@
-const http = require('http');
-
-const httpProxy = require('http-proxy');
 const fs = require('fs');
 const ensureLoggedIn = require('connect-ensure-login').ensureLoggedIn;
 const bodyParser = require('body-parser');
@@ -53,42 +50,6 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
     return selfName
   }
 
-  function getUserInfo(username, selfName, next) {
-    var query;
-    if (selfName && username == selfName)
-      query = { user: selfName };
-    else
-      query = { user: username, isPublic: true};
-    models.Notebook.find(query, null, {sort: {updated_at: -1}}, function(err, myNotebooks) {
-      if(err) {
-        next(err);
-      } else {
-        models.Rusage.findOne({username: username}, function(err, rusage) {
-          let res = {
-            data: {
-              type: "users",
-              id: username,
-              attributes: {
-                username: username,
-              },
-              relationships: {
-                notebooks: {
-                  data: myNotebooks.map(models.notebookResId)
-                },
-                rusage: null
-              }
-            },
-            included: notebooks.map(models.notebookResObj)
-          }
-          if (rusage) {
-            res.data.relationships.rusage = models.rusageResId(rusage)
-            res.data.included.push(models.rusageResObj(rusage))
-          }
-          next(null, res);
-        });
-      }
-    });
-  }
 
   //Passport SAML request is not accepted until the body is parsed. And since bodyParser can not used in the express app, it is called here separately.
   app.post(config.passport.saml.path,bodyParser.json(),bodyParser.urlencoded({extended: true}),
@@ -198,68 +159,9 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
       }
     });
   })
-  
-  function getMyself(username, next) {
-    File.find({isPublic: true}, null, {sort: "user -updated_at"}, function(err,notebooks) {
-      if(err) {
-        next(err);
-      } else {
-        let username = selfUserName(req)
-        if (!username) {
-          next(null, {
-            data: {
-              type: "myself",
-              id: 1,
-              attributes: {
-                username: ''
-              },
-              relationships: {
-                user: null,
-                visibleNotebooks: {
-                  data: notebooks.map(notebookResId)
-                }
-              }
-            },
-            included: notebooks.map(notebookResObj)
-          })
-        } else {
-          getUserInfo(username, username, function(err, userInfo) {
-            if (err) {
-              next(err)
-            } else {
-              var toInclude = notebooks.concat([user.data]).concat(userInfo.included.filter(function(x) {
-                return x.type != "notebook" || !x.isPublic
-              }));
-              next(null,{
-                data: {
-                  type: "myselfs",
-                  id: 1,
-                  attributes: {
-                    username: username
-                  },
-                  relationships: {
-                    user: {
-                      data: { type: "users", id: username }
-                    },
-                    rusage: {
-                      data: userInfo.data.relationships.rusage
-                    },
-                    visibleNotebooks: {
-                      data: notebooks.map(models.notebookResId)
-                    }
-                  }
-                },
-                included: toInclude
-              });
-            }
-          });
-	}
-      }
-    });
-  }
 
   app.get('/userapi/myselfs', setJsonApiHeader(), function(req,res) {
-    getMyself(selfUserName(req), function(err, myself) {
+    models.getMyself(selfUserName(req), function(err, myself) {
       if (err) {
         res.send({ errors: [err] })
       } else {
@@ -273,7 +175,7 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
 
   app.get('/userapi/myselfs/:id', setJsonApiHeader(), function(req,res) {
     if (req.params.id == "1") {
-      getMyself(selfUserName(req), function(err, myself) {
+      models.getMyself(selfUserName(req), function(err, myself) {
         if (err) {
           res.send({ errors: [err] })
         } else {
@@ -297,7 +199,7 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
   app.get('/userapi/users/:username', setJsonApiHeader(), function(req, res){
     var selfName = selfUserName(req)
     let username = req.params.username;
-    getUserInfo(username, selfName, function(err, userInfo) {
+    models.getUserInfo(username, selfName, function(err, userInfo) {
       if (err) {
         res.send(err)
       } else {

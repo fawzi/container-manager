@@ -1,5 +1,5 @@
 'use strict';
-module.exports = function(config, models) {
+module.exports = function(env,config, models) {
   const express = require('express');
 
   const http = require('http');
@@ -17,11 +17,11 @@ module.exports = function(config, models) {
   const SamlStrategy = require('passport-saml').Strategy;
   const stringify = require('json-stringify-safe');
 
-  require('./config/passport')(passport, config);
-  const k8 = require('./app/kubernetes')(config);
-  const k8component = require('./app/components')(config);
+  require('../config/passport')(passport, config);
+  const k8 = require('./kubernetes')(config);
+  const k8component = require('./components')(config);
   const client = redis.createClient(config.redis);
-  const ProxyRouter = require('./app/ProxyRouter')(config,k8, k8component)
+  const ProxyRouter = require('./ProxyRouter')(config,k8, k8component)
   const proxyRouter = new ProxyRouter({
     backend: client,
     cache_ttl: 10
@@ -112,7 +112,7 @@ module.exports = function(config, models) {
         }*/
   });
 
-  require('./config/routes')(app,redirect, config, proxyServer, proxyRouter, k8, passport, passportInit, passportSession, models);
+  require('../config/routes')(app,redirect, config, proxyServer, proxyRouter, k8, passport, passportInit, passportSession, models);
 
   var httpServer;
   if (env === 'development') {

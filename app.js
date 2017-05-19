@@ -24,10 +24,10 @@ function main() {
       throw new Error(`unknown command line argument '${arg}.\n${usage}'`)
     }
     if (cmds.includes("watcher")) {
-      const fileWatcher = require('./app/filesWatcher')(config, models);
+      const fileWatcher = require('./app/filesWatcher')(env, config, models);
     }
     if (cmds.includes("webserver")) {
-      const webServer = require('./app/webserver')(config, models);
+      const webServer = require('./app/webserver')(env, config, models);
     }
     if (cmds.length == 0) {
       console.log(`missin command:\n${usage}`)
