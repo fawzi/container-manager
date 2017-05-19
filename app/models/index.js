@@ -96,11 +96,11 @@ module.exports = function(mongoose) {
       query = { user: selfName };
     else
       query = { user: username, isPublic: true};
-    Notebook.Notebook.find(query, null, {sort: {updated_at: -1}}, function(err, myNotebooks) {
+    Notebook.find(query, null, {sort: {updated_at: -1}}, function(err, myNotebooks) {
       if(err) {
         next(err);
       } else {
-        Rusage.Rusage.findOne({username: username}, function(err, rusage) {
+        Rusage.findOne({username: username}, function(err, rusage) {
           let res = {
             data: {
               type: "users",
@@ -110,16 +110,16 @@ module.exports = function(mongoose) {
               },
               relationships: {
                 notebooks: {
-                  data: myNotebooks.map(Notebook.resId)
+                  data: myNotebooks.map(notebookResId)
                 },
                 rusage: null
               }
             },
-            included: notebooks.map(Notebook.resObj)
+            included: myNotebooks.map(notebookResObj)
           }
           if (rusage) {
-            res.data.relationships.rusage = Rusage.ResId(rusage)
-            res.data.included.push(Rusage.resObj(rusage))
+            res.data.relationships.rusage = rusageResId(rusage)
+            res.data.included.push(rusageResObj(rusage))
           }
           next(null, res);
         });
@@ -129,7 +129,7 @@ module.exports = function(mongoose) {
 
   // return information on how the user sees himself
   function getMyself(username, next) {
-    File.find({isPublic: true}, null, {sort: "user -updated_at"}, function(err,notebooks) {
+    Notebook.find({isPublic: true}, null, {sort: "user -updated_at"}, function(err,notebooks) {
       if(err) {
         next(err);
       } else {
@@ -174,7 +174,7 @@ module.exports = function(mongoose) {
                       data: userInfo.data.relationships.rusage
                     },
                     visibleNotebooks: {
-                      data: notebooks.map(Notebook.resId)
+                      data: notebooks.map(notebookResId)
                     }
                   }
                 },

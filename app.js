@@ -18,6 +18,8 @@ function main() {
       return;
     } else if (arg == "webserver") {
       cmds.push("webserver")
+    } else if (arg == "apiserver") {
+      cmds.push("apiserver")
     } else if (arg == "watcher") {
       cmds.push("watcher")
     } else {
@@ -27,7 +29,9 @@ function main() {
       const fileWatcher = require('./app/filesWatcher')(env, config, models);
     }
     if (cmds.includes("webserver")) {
-      const webServer = require('./app/webserver')(env, config, models);
+      const webServer = require('./app/webserver')(env, config, models, false);
+    } else if (cmds.includes("apiserver")) {
+      const webServer = require('./app/webserver')(env, config, models, true);
     }
     if (cmds.length == 0) {
       console.log(`missin command:\n${usage}`)
