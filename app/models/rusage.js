@@ -16,7 +16,6 @@ var resourceSchema = new Schema({
     cpuUsage: Number,
 });
 
-var ResourceUsage = mongoose.model('ResourceUsage', resourceSchema);
-
-return(ResourceUsage);
+  const Rusage = mongoose.model('Rusage', resourceSchema);
+  return Rusage
 };

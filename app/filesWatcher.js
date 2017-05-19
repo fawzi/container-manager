@@ -1,29 +1,32 @@
 'use strict';
-module.exports = function(config, File, ResourceUsage){
+module.exports = function(config, models){
   const chokidar = require('chokidar');
   const pathModule = require('path');
   const fs = require('fs');
   const getSize = require('get-folder-size');
   
+  const Notebook = models.Notebook
+  const Rusage = models.Rusage
+
   //TODO: Write a better errorHandler
   function errorHandler(err) {
     throw err;
   }
 
   function findByPath(path, next) {
-    File.findOne({path: path}, function(err, file) {
+    Notebook.findOne({path: path}, function(err, notebook) {
       if (err) {
         errorHandler(err);
       }
-      next(file)
+      next(notebook)
     });
   }
 
   // scan all database entries and removes those that do not exist anymore
   function verifyPresent() {
-    File.find({}).cursor().on('data', function(notebook) {
+    Notebook.find({}).cursor().on('data', function(notebook) {
       if (!fs.existsSync(notebook.path)) {
-        File.remove({ path: notebook.path }, function (err) {
+        Notebook.remove({ path: notebook.path }, function (err) {
           if (err) return errorHandler(err);
           console.log(`Removed ${notebook.path}`)
         });
@@ -31,16 +34,16 @@ module.exports = function(config, File, ResourceUsage){
     }).on('error', function(err) {
       console.log(`Failed to check data in db due to ${err}`);
     })
-    /*ResourceUsage.find({}).cursor().on('data', function(rUsage) {
+    /*Rusage.find({}).cursor().on('data', function(rUsage) {
       if (!(username in rUsage) || !rUsage.username) {
-        ResourceUsage.remove({ username: username }, function (err) {
+        Rusage.remove({ username: username }, function (err) {
           if (err) return errorHandler(err);
           console.log(`Removed resources for ${rUsage.username}`)
         });
       }
       const path = config.userInfo.sharedDir + '/' + rUsage.username
       if (!fs.existsSync(path)) {
-        ResourceUsage.remove({ username: username }, function (err) {
+        Rusage.remove({ username: username }, function (err) {
           if (err) return errorHandler(err);
           console.log(`Removed resources for ${rUsage.username}`)
         });
@@ -49,17 +52,6 @@ module.exports = function(config, File, ResourceUsage){
       console.log(`Failed to check resource usage data in db due to ${err}`);
     })*/
   }
-
-  // gets the resourceUsage entry for the given user
-  function resourceUsage(username, next) {
-    ResourceUsage.findOne({username: username}, function(err, user) {
-      if (err) {
-        errorHandler(err);
-      }
-      next(user)
-    });
-  }
-
 
   // cache to avoid recalculating sizes too often
   let lastDiskUpdate = {}
@@ -99,14 +91,14 @@ module.exports = function(config, File, ResourceUsage){
           cpuUsage: 0.0
         }
         console.log(`Did compute size: ${JSON.stringify(rd)}`)
-        resourceUsage(username, function (rUsage) {
+        models.getRusage(username, function (rUsage) {
           var toUpdate;
           if (rUsage) {
             for (let k in rUsage)
               rUsage[k] = rUsage[k]
             toUpdate = rUsage
           } else {
-            toUpdate = ResourceUsage(rd)
+            toUpdate = new Rusage(rd)
           }
           toUpdate.save(function(err) {
             if (err) errorHandler(err);
@@ -119,9 +111,9 @@ module.exports = function(config, File, ResourceUsage){
 
   // handles a notebook file, updating the db entry accordingly
   // might trigger a size recomputation
-  function handleFile(path, stats) {
+  function handleNotebook(path, stats) {
     // compare updated_at with stats.mdate? currently always update on startup...
-    // console.log('Handling file ' + path);
+    // console.log('Handling notebook ' + path);
     var sharedDir = config.userInfo.sharedDir;
     if (sharedDir[sharedDir.length - 1 ] != '/')
       sharedDir = sharedDir + '/';
@@ -177,57 +169,55 @@ module.exports = function(config, File, ResourceUsage){
       }
       let f = {
         path: path,
-        pathInContainer: pathInContainer,
-        partialPath: partialPath,
+        logicalPath: pathInContainer,
         isPublic: isPublic,
-        user: user,
-        link: '/beaker/#/open?uri=' + pathInContainer,
-        filename: filename,
+        username: user,
+        editLink: '/beaker/#/open?uri=' + pathInContainer,
         title: title,
         authors: authors,
         description: description,
         created_at: stats.ctime,
         updated_at: stats.mtime
       };
-      //console.log(`handling file to ${JSON.stringify(f)}`)
-      var newFile;
-      File.findOne({path: path}, function(err, file) {
-        newFile = file
-        if (file) {
+      //console.log(`handling notebook to ${JSON.stringify(f)}`)
+      var newNotebook;
+      Notebook.findOne({path: path}, function(err, notebook) {
+        newNotebook = notebook
+        if (newNotebook) {
           for (let k in f)
-            file[k] = f[k];
+            newNotebook[k] = f[k];
         } else {
-          newFile = File(f);
+          newNotebook = new Notebook(f);
         }
-        // save the file
-        newFile.save(function(err) {
+        // save the notebook
+        newNotebook.save(function(err) {
           if (err) errorHandler(err);
-          console.log('Handled Database entry for the file: ' + path);
+          console.log('Handled Database entry for the notebook: ' + path);
           recomputeSize(user, stats.mtime);
         });
       });
     });
   }
 
-  // callback when a file is deleted
-  function deleteFile(path) {
-    console.log('File deleted!' + path);
-    File.remove({ path: path }, function (err) {
+  // callback when a notebook is deleted
+  function deleteNotebook(path) {
+    console.log('Notebook deleted!' + path);
+    Notebook.remove({ path: path }, function (err) {
       if (err) return errorHandler(err);
       // removed!
     });
   }
 
-  // callback when a file is added (or on the initial startup
-  function addNewFile(path, stats) {
-    console.log('File added!' + path);
-    handleFile(path, stats)
+  // callback when a notebook is added (or on the initial startup
+  function addNewNotebook(path, stats) {
+    console.log('Notebook added!' + path);
+    handleNotebook(path, stats)
   }
 
-  // callback when a file changes
-  function changeFile(path,stats) {
-    console.log('File change!' + path);
-    handleFile(path, stats)
+  // callback when a notebook changes
+  function changeNotebook(path,stats) {
+    console.log('Notebook change!' + path);
+    handleNotebook(path, stats)
   }
 
   verifyPresent();
@@ -236,10 +226,10 @@ module.exports = function(config, File, ResourceUsage){
     usePolling: true // more expensive, but works also on GPFS with updates from multiple machines
   });
   watcher.on('add', (path,stats) => {
-    addNewFile(path, stats)
+    addNewNotebook(path, stats)
   })
-    .on('unlink', (path) =>  deleteFile(path))
+    .on('unlink', (path) =>  deleteNotebook(path))
     .on('ready', () => console.log('Initial scan complete. Ready for changes'))
-    .on('change', (path,stats) => changeFile(path,stats));
+    .on('change', (path,stats) => changeNotebook(path,stats));
 
 }

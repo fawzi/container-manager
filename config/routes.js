@@ -4,8 +4,7 @@ const httpProxy = require('http-proxy');
 const fs = require('fs');
 const ensureLoggedIn = require('connect-ensure-login').ensureLoggedIn;
 const bodyParser = require('body-parser');
-module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, passport, passportInit, passportSession, File, ResourceUsage) {
-
+module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, passport, passportInit, passportSession,  models) {
   function makeid(){
     var text = "";
     var possible = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -35,7 +34,62 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
       next();
     }
   }
+
+  function setJsonApiHeader() {
+    return function(req, res, next) {
+      res.setHeader('content-type', 'application/vnd.api+json');
+      next();
+    }
+  }
   
+  // returns the name of the logget in user
+  function selfUserName(req) {
+    var selfName;
+    try {
+      selfName = req.user.id;
+    } catch(e) {
+      selfName = ''
+    }
+    return selfName
+  }
+
+  function getUserInfo(username, selfName, next) {
+    var query;
+    if (selfName && username == selfName)
+      query = { user: selfName };
+    else
+      query = { user: username, isPublic: true};
+    models.Notebook.find(query, null, {sort: {updated_at: -1}}, function(err, myNotebooks) {
+      if(err) {
+        next(err);
+      } else {
+        models.Rusage.findOne({username: username}, function(err, rusage) {
+          let res = {
+            data: {
+              type: "users",
+              id: username,
+              attributes: {
+                username: username,
+              },
+              relationships: {
+                notebooks: {
+                  data: myNotebooks.map(models.notebookResId)
+                },
+                rusage: null
+              }
+            },
+            included: notebooks.map(models.notebookResObj)
+          }
+          if (rusage) {
+            res.data.relationships.rusage = models.rusageResId(rusage)
+            res.data.included.push(models.rusageResObj(rusage))
+          }
+          next(null, res);
+        });
+      }
+    });
+  }
+
   //Passport SAML request is not accepted until the body is parsed. And since bodyParser can not used in the express app, it is called here separately.
   app.post(config.passport.saml.path,bodyParser.json(),bodyParser.urlencoded({extended: true}),
            passport.authenticate(config.passport.strategy,
@@ -85,112 +139,165 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
     res.send('Working');
   });
 
-  app.get('/userapi/files', setFrontendHeader(), function(req, res){
-    File.find({isPublic: true},function(err,files) {
+  app.get('/userapi/notebooks', setJsonApiHeader(), function(req, res){
+    models.Notebook.find({isPublic: true},function(err,notebooks) {
       if(err) {
-        res.send(err);
+        res.send({ errors: [err] });
       }
       else {
-        res.send({files:files});
+        res.send({ data: notebooks.map(models.notebookResObj) });
       }
     });
   })
 
-
-  app.get('/userapi/files/:user', setFrontendHeader(), function(req, res){
-    File.find({user: req.params.user},function(err,files) {
+  app.get('/userapi/notebooks/:id', setJsonApiHeader(), function(req, res){
+    res.setHeader('content-type', 'application/vnd.api+json')
+    models.Notebook.findOne({_id: req.params.id},function(err,notebook) {
       if(err) {
-        res.send(err);
-      }
-      else {
-        res.send(files);
-      }
-    });
-  })
-
-  app.get('/userapi/files/:id', setFrontendHeader(), function(req, res){
-    File.find({id: req.params.id},function(err,files) {
-      if(err) {
-        res.send(err);
-      }
-      else {
-        res.send(files);
-      }
-    });
-  })
-
-  function selfUserName(req) {
-    var selfName;
-    try {
-      selfName = req.user.id;
-    } catch(e) {
-      selfName = ''
-    }
-    return selfName
-  }
-
-  function userInfo(username, selfName, next) {
-    var query;
-    if (selfName && username == selfName)
-      query = { user: selfName };
-    else
-      query = { user: username, isPublic: true};
-    File.find(query, null, {sort: {updated_at: -1}}, function(err, myFiles) {
-      if(err) {
-        next(err);
-      } else {
-        ResourceUsage.findOne({username: username}, null,{}, function(err, rUsage) {
-          let user = {
-            type: "user",
-            username: username,
-            myNotebooks: myFiles
+        res.send({ errors: [ err ] });
+      } else if (notebook.isPublic || notebook.username == selfUserName(req)) {
+        res.send({
+          data: models.notebookResObj(notebook)
+        });
+      } else { // hide completely and treat as non existing, or trigger an error? currently expose minimal info
+        res.send({
+          data:{
+            type: "notebooks",
+            id: req.params.id,
+            attributes: {
+              isPublic: false,
+              username: notebook.username
+            }
           }
-          if (rUsage) {
-            for (let k in ['fileUsageLastUpdate','privateStorageGB','sharedStorageGB','cpuUsageLastUpdate', 'cpuUsage'])
-              user[k] = rUsage[k]
-          }
-          next(null, {
-            'self': selfName,
-            'user': user
-          });
         });
       }
     });
-  }
-  
-  app.get('/userapi/self', setFrontendHeader(), function(req, res){
-    File.find({isPublic: true}, null, {sort: "user -updated_at"}, function(err,files) {
+  })
+
+  app.get('/userapi/rusages', setJsonApiHeader(), function(req, res){
+    res.setHeader('content-type', 'application/vnd.api+json')
+    models.Rusage.find({},function(err,rusages) {
       if(err) {
-        res.send(err);
+        res.send({ errors: [err] });
+      }
+      else {
+        res.send({ data: rusages.map(models.rusageResObj) });
+      }
+    });
+  })
+
+  app.get('/userapi/rusages/:username', setJsonApiHeader(), function(req, res){
+    res.setHeader('content-type', 'application/vnd.api+json')
+    models.getRusage(req.params.username, function(err,rusage) {
+      if(err) {
+        res.send({ errors: [ err ] });
+      } else { // hide if rusage.username != selfUserName(req)??
+        res.send({
+          data: rusageResObj(rusage)
+        });
+      }
+    });
+  })
+  
+  function getMyself(username, next) {
+    File.find({isPublic: true}, null, {sort: "user -updated_at"}, function(err,notebooks) {
+      if(err) {
+        next(err);
       } else {
         let username = selfUserName(req)
         if (!username) {
-          res.send({
-            self:'',
-            user:{}
+          next(null, {
+            data: {
+              type: "myself",
+              id: 1,
+              attributes: {
+                username: ''
+              },
+              relationships: {
+                user: null,
+                visibleNotebooks: {
+                  data: notebooks.map(notebookResId)
+                }
+              }
+            },
+            included: notebooks.map(notebookResObj)
           })
-          return;
-        }
-        userInfo(username, username, function(err, userInfo) {
-          if (err) {
-            res.send(err)
-          } else {
-            userInfo.user.sharedNotebooks = files
-            res.send(userInfo);
-          }
-	});
+        } else {
+          getUserInfo(username, username, function(err, userInfo) {
+            if (err) {
+              next(err)
+            } else {
+              var toInclude = notebooks.concat([user.data]).concat(userInfo.included.filter(function(x) {
+                return x.type != "notebook" || !x.isPublic
+              }));
+              next(null,{
+                data: {
+                  type: "myselfs",
+                  id: 1,
+                  attributes: {
+                    username: username
+                  },
+                  relationships: {
+                    user: {
+                      data: { type: "users", id: username }
+                    },
+                    rusage: {
+                      data: userInfo.data.relationships.rusage
+                    },
+                    visibleNotebooks: {
+                      data: notebooks.map(models.notebookResId)
+                    }
+                  }
+                },
+                included: toInclude
+              });
+            }
+          });
+	}
+      }
+    });
+  }
+
+  app.get('/userapi/myselfs', setJsonApiHeader(), function(req,res) {
+    getMyself(selfUserName(req), function(err, myself) {
+      if (err) {
+        res.send({ errors: [err] })
+      } else {
+        res.send({
+          data: [ myself.data ],
+          included: myself.included
+        });
       }
     });
   });
 
-  app.get('/userapi/whoami', setFrontendHeader(), function(req, res){
+  app.get('/userapi/myselfs/:id', setJsonApiHeader(), function(req,res) {
+    if (req.params.id == "1") {
+      getMyself(selfUserName(req), function(err, myself) {
+        if (err) {
+          res.send({ errors: [err] })
+        } else {
+          res.send({
+            data: [ myself.data ],
+            included: myself.included
+          });
+        }
+      })
+    } else {
+      res.send({
+        data: null
+      })
+    }
+  });
+
+  app.get('/userapi/myselfs/1/username', setJsonApiHeader(), function(req, res){
     res.send(selfUserName(req))
   });
 
-  app.get('/userapi/users/:username', setFrontendHeader(), function(req, res){
+  app.get('/userapi/users/:username', setJsonApiHeader(), function(req, res){
     var selfName = selfUserName(req)
     let username = req.params.username;
-    userInfo(username, selfName, function(err, userInfo) {
+    getUserInfo(username, selfName, function(err, userInfo) {
       if (err) {
         res.send(err)
       } else {
@@ -218,4 +325,4 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
       });
     });
   });
-};
+}
