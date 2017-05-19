@@ -25,17 +25,17 @@ function main() {
     } else {
       throw new Error(`unknown command line argument '${arg}.\n${usage}'`)
     }
-    if (cmds.includes("watcher")) {
-      const fileWatcher = require('./app/filesWatcher')(env, config, models);
-    }
-    if (cmds.includes("webserver")) {
-      const webServer = require('./app/webserver')(env, config, models, false);
-    } else if (cmds.includes("apiserver")) {
-      const webServer = require('./app/webserver')(env, config, models, true);
-    }
-    if (cmds.length == 0) {
-      console.log(`missin command:\n${usage}`)
-    }
+  }
+  if (cmds.includes("watcher")) {
+    const fileWatcher = require('./app/filesWatcher')(env, config, models);
+  }
+  if (cmds.includes("webserver")) {
+    const webServer = require('./app/webserver')(env, config, models, false);
+  } else if (cmds.includes("apiserver")) {
+    const webServer = require('./app/webserver')(env, config, models, true);
+  }
+  if (cmds.length == 0) {
+    console.log(`missin command:\n${usage}`)
   }
 }
 

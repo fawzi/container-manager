@@ -41,9 +41,9 @@ module.exports = {
       image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.8.0-45-g3d3785f-dirty'
     },
     userInfo: {
-	  basePathToWatch: process.env.HOME + '/NOMAD/dirToWatch',
-      sharedDir: process.env.HOME + '/NOMAD/dirToWatch/public',
-      privateDir: process.env.HOME + '/NOMAD/dirToWatch/private',
+	  basePathToWatch: process.env.HOME + '/nomad/user-data',
+      sharedDir: process.env.HOME + '/nomad/user-data/shared',
+      privateDir: process.env.HOME + '/nomad/user-data/private',
 	  privateDirInContainer: '/data/private',
 	  sharedDirInContainer: '/data/shared',
 	  mySharedDirInContainer: '/data/my-shared'

@@ -1,4 +1,3 @@
-const fs = require('fs');
 const ensureLoggedIn = require('connect-ensure-login').ensureLoggedIn;
 const bodyParser = require('body-parser');
 
@@ -160,6 +159,18 @@ module.exports = function (app, config, passport,  models) {
         res.send(err)
       } else {
         res.send(userInfo);
+      }
+    });
+  });
+
+  app.get('/userapi/users', setJsonApiHeader(), function(req, res){
+    var selfName = selfUserName(req)
+    let username = req.params.username;
+    models.getUserInfo(username, selfName, function(err, userInfo) {
+      if (err) {
+        res.send(err)
+      } else {
+        res.send(userInfo);// to do
       }
     });
   });

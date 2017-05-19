@@ -145,7 +145,7 @@ module.exports = function(env,config, models, userApi) {
     });
 
   } else {
-    require('../config/user_api')(app, config, passport,  models)
+    require('../config/userapi')(app, config, passport,  models)
   }
 
   httpServer.listen(config.app.port);

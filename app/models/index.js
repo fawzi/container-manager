@@ -1,4 +1,5 @@
 'use strict';
+const fs = require('fs');
 
 module.exports = function(mongoose) {
   const Rusage = require('./rusage.js')(mongoose)
