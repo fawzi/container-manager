@@ -120,7 +120,7 @@ module.exports = function(mongoose) {
           }
           if (rusage) {
             res.data.relationships.rusage = rusageResId(rusage)
-            res.data.included.push(rusageResObj(rusage))
+            res.included.push(rusageResObj(rusage))
           }
           next(null, res);
         });
@@ -134,8 +134,7 @@ module.exports = function(mongoose) {
       if(err) {
         next(err);
       } else {
-        let username = selfUserName(req)
-        if (!username) {
+         if (!username) {
           next(null, {
             data: {
               type: "myself",
@@ -157,7 +156,7 @@ module.exports = function(mongoose) {
             if (err) {
               next(err)
             } else {
-              var toInclude = notebooks.concat([user.data]).concat(userInfo.included.filter(function(x) {
+              var toInclude = notebooks.concat([userInfo.data]).concat(userInfo.included.filter(function(x) {
                 return x.type != "notebook" || !x.isPublic
               }));
               next(null,{

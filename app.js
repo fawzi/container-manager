@@ -3,7 +3,7 @@ const config = require('./config/config')[env];
 console.log('Using configuration', config);
 const mongoose = require('mongoose');
 mongoose.connect(config.mongoDb.url);
-const models = require('./app/models')( mongoose);
+const models = require('./app/models')(mongoose);
 
 function main() {
   var iarg = 2
