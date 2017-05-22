@@ -95,10 +95,11 @@ var createRcControllerConfig = function(user) {
                 },
                 {
                   "mountPath": "/home/beaker/notebooks",
-                  "name": "notebooks-data-volume"
+                  "name": "notebooks-data-volume",
+                  "readOnly": true
                 },
                 {
-                  "mountPath": config.userInfo.privateDirInContainer,
+                  "mountPath": config.userInfo.privateDirInContainer+ "/" + user,
                   "name": "private-data-volume"
                 },
                 {
