@@ -1,7 +1,7 @@
 'use strict';
 const fs = require('fs');
 
-module.exports = function(mongoose) {
+module.exports = function(mongoose, config) {
   const Rusage = require('./rusage.js')(mongoose)
 
   const rusageAttributes = ['username', 'fileUsageLastUpdate','privateStorageGB','sharedStorageGB','cpuUsageLastUpdate', 'cpuUsage']
@@ -40,10 +40,10 @@ module.exports = function(mongoose) {
   function getRusage(username, next) {
     Rusage.findOne({ username: username }, function (err, rusage) {
       if (!rusage) {
-        if (fs.existsSync(config.userInfo.sharedDir + "/" + username)) {
+        //if (fs.existsSync(config.userInfo.sharedDir + "/" + username)) {
           next(null, {
             data: {
-              type: "rusage",
+              type: "rusages",
               id: username,
               attributes: {
                 username: username,
@@ -55,11 +55,11 @@ module.exports = function(mongoose) {
               }
             }
           })
-        } else {
-          next(null, { data: null })
-        }
+        //} else {
+        //  next(null, { data: null })
+        //}
       } else {
-        next(null, rusageResObj(rusage))
+        next(null, { data: rusageResObj(rusage) })
       }
     });
   }
@@ -113,13 +113,13 @@ module.exports = function(mongoose) {
                 notebooks: {
                   data: myNotebooks.map(notebookResId)
                 },
-                rusage: null
+                rusage: { data: null }
               }
             },
             included: myNotebooks.map(notebookResObj)
           }
           if (rusage) {
-            res.data.relationships.rusage = rusageResId(rusage)
+            res.data.relationships.rusage.data = rusageResId(rusage)
             res.included.push(rusageResObj(rusage))
           }
           next(null, res);
@@ -137,13 +137,13 @@ module.exports = function(mongoose) {
          if (!username) {
           next(null, {
             data: {
-              type: "myself",
+              type: "myselfs",
               id: 1,
               attributes: {
                 username: ''
               },
               relationships: {
-                user: null,
+                user: {data: null},
                 visibleNotebooks: {
                   data: notebooks.map(notebookResId)
                 }
@@ -156,8 +156,8 @@ module.exports = function(mongoose) {
             if (err) {
               next(err)
             } else {
-              var toInclude = notebooks.concat([userInfo.data]).concat(userInfo.included.filter(function(x) {
-                return x.type != "notebook" || !x.isPublic
+              var toInclude = notebooks.map(notebookResObj).concat([userInfo.data]).concat(userInfo.included.filter(function(x) {
+                return x.type != "notebooks" || !x.attributes.isPublic
               }));
               next(null,{
                 data: {

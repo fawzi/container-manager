@@ -3,7 +3,7 @@ const config = require('./config/config')[env];
 console.log('Using configuration', config);
 const mongoose = require('mongoose');
 mongoose.connect(config.mongoDb.url);
-const models = require('./app/models')(mongoose);
+const models = require('./app/models')(mongoose, config);
 
 function main() {
   var iarg = 2
@@ -29,18 +29,18 @@ function main() {
   if (cmds.includes("watcher")) {
     const fileWatcher = require('./app/filesWatcher')(env, config, models);
   }
-  if (cmds.includes("webserver")) {
-    const webServer = require('./app/webserver')(env, config, models, false);
-  } else if (cmds.includes("apiserver")) {
-    const webServer = require('./app/webserver')(env, config, models, true);
+  if (cmds.includes("webserver") || cmds.includes("apiserver")) {
+    const webServer = require('./app/webserver')(env, config, models, cmds);
   }
   if (cmds.length == 0) {
     console.log(`missin command:\n${usage}`)
   }
 }
 
-/*process.on('uncaughtException', (err) => {
-  console.log("#ERROR# UncaughtException: " + err)
-});*/
+if (config.app.catchErrors) {
+  process.on('uncaughtException', (err) => {
+    console.log("#ERROR# UncaughtException: " + err)
+  })
+}
 
 main();

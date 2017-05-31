@@ -33,7 +33,7 @@
     "http-proxy": "^1.15.2",
     "jade": "1.11.0",
     "json-stringify-safe": "^5.0.1",
-    "kubernetes-client": "^2.2.2",
+    "kubernetes-client": "^3.10.1",
     "memory-store": "0.0.1",
     "mongoose": "^4.9.5",
     "morgan": "1.7.0",

@@ -28,6 +28,7 @@ ProxyRouter.prototype.kubernetesServiceLookup = function(req, res, userID, isWeb
   var self = this;
 
   function createService(userID) {
+    console.log("trying to create service for the user: " + userID);
     self.set_user_state(userID,self.stateEnum.STARTING);
     k8.ns(config.k8component.namespace).service.get('beaker-svc-'+userID,function(err, result) {
       if(err)
@@ -73,6 +74,7 @@ ProxyRouter.prototype.kubernetesServiceLookup = function(req, res, userID, isWeb
   }
 
   function createReplicationController(userID) {
+    console.log("trying to create replication controller for user: " + userID);
 //	createUserDir(userID); //Kubernetes can handle it, but the permissions can be problamatic
     k8.ns(config.k8component.namespace).replicationcontrollers.get('beaker-rc-'+userID, function(err, result) {
       if(err)
@@ -90,6 +92,7 @@ ProxyRouter.prototype.kubernetesServiceLookup = function(req, res, userID, isWeb
   };
 
   function getServicePort(userID) {
+    console.log("trying to get service part for user: " + userID);
     self.set_user_state(userID,self.stateEnum.STARTED);
     k8.ns(config.k8component.namespace).service.get('beaker-svc-'+userID,function(err, result) {
       if(err){
@@ -98,12 +101,12 @@ ProxyRouter.prototype.kubernetesServiceLookup = function(req, res, userID, isWeb
       }
       else{
           var target= {host: config.k8Api.node, port: result.spec.ports[0].nodePort};
-//          console.log(`Resolved using kubernetes to ${stringify(target)}`)
+          console.log(`Resolved using kubernetes to ${stringify(target)}`)
           var writeTarget = stringify(target);
           var cb = function(){
             http.request({method:'HEAD',host:target.host,port:target.port,path: '/'}, (r) => {
                 if(r.statusCode >= 200 && r.statusCode < 400 ){
-//                  console.log("Forwarding to the target!")
+                  console.log("Forwarding to the target!")
                   self.set_user_state(userID,self.stateEnum.AVAILABLE);
                   self.set_user_last_success(userID, Date.now());
                   next(target);
@@ -111,7 +114,7 @@ ProxyRouter.prototype.kubernetesServiceLookup = function(req, res, userID, isWeb
             }).setTimeout(1000).on('error', (err) => {
               self.push_user_error(userID, err.message);
               self.clear_user_state(userID);
-//              console.log("Sending message back to the browser!")
+              console.log("Sending message back to the browser!")
               if (!isWebsocket){
                 res.send(reloadMsg);
               }
@@ -140,11 +143,11 @@ ProxyRouter.prototype.kubernetesServiceLookup = function(req, res, userID, isWeb
 };
 // The decision could be made using the state machine instead of the
 ProxyRouter.prototype.lookup = function(req, res, userID, isWebsocket, path, next) {
-//  console.log("Looking up the path! " + req.path)
+  console.log("Looking up the path! " + req.path)
   var self = this;
   if ( self.cache[userID] && self.cache[userID][path]) {
     var target = self.cache[userID][path];
-//    console.log(`Resolved using local cache to ${stringify(target)}`)
+    console.log(`Resolved using local cache to ${stringify(target)}`)
     next(target);
   }
   else {
@@ -152,7 +155,7 @@ ProxyRouter.prototype.lookup = function(req, res, userID, isWebsocket, path, nex
     self.client.hget(userID, path, function(err, data) {
       if (data) {
         var target = JSON.parse(data);
-//        console.log(`Resolved using redis cache to ${stringify(target)}`)
+        console.log(`Resolved using redis cache to ${stringify(target)}`)
         // Set cache and expiration
         if (self.cache[userID] === undefined){
           self.cache[userID] = { path: target }
@@ -163,7 +166,7 @@ ProxyRouter.prototype.lookup = function(req, res, userID, isWebsocket, path, nex
         self.expire_route(userID, self.cache_ttl);
         http.request({method:'HEAD',host:target.host,port:target.port,path: '/'}, (r) => {
           if(r.statusCode >= 200 && r.statusCode < 400 ){
-//            console.log("Forwarding to the target!");
+            console.log("Forwarding to the target!");
             self.set_user_state(userID,self.stateEnum.AVAILABLE);
             next(target);
           } else {
@@ -171,7 +174,7 @@ ProxyRouter.prototype.lookup = function(req, res, userID, isWebsocket, path, nex
             self.push_user_error(userID, err.message);
             self.clear_user_state(userID);
             self.client.hdel(userID, path, () =>{});
-//            console.log("Sending message back to the browser!")
+            console.log("Sending message back to the browser!")
             if (!isWebsocket) {
               res.send(reloadMsg);
             }
@@ -181,7 +184,7 @@ ProxyRouter.prototype.lookup = function(req, res, userID, isWebsocket, path, nex
           self.push_user_error(userID, err.message);
           self.clear_user_state(userID);
           self.client.hdel(userID, path, () =>{});
-//          console.log("From error! Sending message back to the browser!")
+          console.log("From error! Sending message back to the browser!")
           if (!isWebsocket) {
             res.send(reloadMsg);
           }
@@ -189,7 +192,7 @@ ProxyRouter.prototype.lookup = function(req, res, userID, isWebsocket, path, nex
 
       } else { //Else of path check in redis client
         //Lookup target from Kubernetes
-//        console.log(`Cant resolve using redis cache!!`)
+        console.log(`Cant resolve using redis cache!!`)
         self.kubernetesServiceLookup(req, res, userID, isWebsocket, path, next);
       }
     });

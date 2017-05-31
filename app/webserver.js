@@ -1,5 +1,5 @@
 'use strict';
-module.exports = function(env,config, models, userApi) {
+module.exports = function(env,config, models, cmds) {
   const express = require('express');
 
   const http = require('http');
@@ -16,9 +16,14 @@ module.exports = function(env,config, models, userApi) {
   const httpProxy = require('http-proxy');
   const SamlStrategy = require('passport-saml').Strategy;
   const stringify = require('json-stringify-safe');
+  const fs = require('fs');
+  const ensureLoggedIn = require('connect-ensure-login').ensureLoggedIn;
 
-  if (userApi)
-    config.passport.saml.path = '/user-api' + config.passport.saml.path
+  var loginPrefix = ''
+  if (cmds.includes('apiserver') && !cmds.includes('webserver'))
+    loginPrefix = '/userapi' // avoid??
+
+  config.passport.saml.path = loginPrefix + config.passport.saml.path
   require('../config/passport')(passport, config);
 
   var app = express();
@@ -52,7 +57,6 @@ module.exports = function(env,config, models, userApi) {
   if (env === 'development') {
     httpServer = http.createServer(app);
   } else {
-    var fs = require('fs');
     var httpsOptions = {
       key: fs.readFileSync(config.app.ssl.key),
       cert: fs.readFileSync(config.app.ssl.cert)
@@ -60,7 +64,50 @@ module.exports = function(env,config, models, userApi) {
     httpServer = https.createServer(httpsOptions, app);
   }
 
-  if (!userApi) {
+  app.get(loginPrefix + '/login',function(req, res, next) {
+    var target = '/'
+    if (req.session && req.query.redirectTo)
+      req.session.returnTo = req.query.redirectTo
+    next()
+  }, passport.authenticate(config.passport.strategy,
+                           {
+                             successReturnToOrRedirect: '/',
+                             failureRedirect: '/login'
+                           })
+         );
+
+  app.get(loginPrefix + '/login/logout', function(req, res){
+    var user;
+      try {
+        user = req.session.passport.user.id
+      } catch (e) {
+        user = null
+      }
+    req.logout();
+    req.session.destroy(function(err) {
+      console.log(`user ${user} logged out`);
+    })
+    res.redirect('/');
+  });
+
+  //Passport SAML request is not accepted until the body is parsed. And since bodyParser can not used in the express app, it is called here separately.
+  app.post(config.passport.saml.path,bodyParser.json(),bodyParser.urlencoded({extended: true}),
+           passport.authenticate(config.passport.strategy,
+                                 {
+                                   failureRedirect: '/',
+                                   failureFlash: true
+                                 }),
+           function (req, res) {
+             if (req.session && req.session.returnTo) {
+               res.redirect(req.session.returnTo); // can't be used for beaker #/open?uri=... urls, as the partial path after # is not available to the backend, always use /notebook-edit instead...
+             } else {
+               res.redirect('/')  ;
+             }
+           }
+          );
+
+
+  if (cmds.includes('webserver')) {
     const k8 = require('./kubernetes')(config);
     const k8component = require('./components')(config);
     const ProxyRouter = require('./ProxyRouter')(config,k8, k8component)
@@ -88,7 +135,7 @@ module.exports = function(env,config, models, userApi) {
       }
 
       proxyRouter.lookup(req, res, sessID, isWebsocket, path, function(route) {
-        //    console.log('Looked up route:' + stringify(route));
+        console.log('Looked up route:' + stringify(route));
         if (route) {
           try{
             next(route);
@@ -125,7 +172,7 @@ module.exports = function(env,config, models, userApi) {
           }*/
     });
 
-    require('../config/routes')(app,redirect, config, proxyServer, proxyRouter, k8, passport, models);
+    require('../config/routes')(app,redirect, config, proxyServer, proxyRouter, k8, passport, models, fs, ensureLoggedIn, bodyParser);
 
     httpServer.on('upgrade', function (req, socket, head) {
       cookieParser(req, {}, function() {
@@ -144,8 +191,9 @@ module.exports = function(env,config, models, userApi) {
       });
     });
 
-  } else {
-    require('../config/userapi')(app, config, passport,  models)
+  }
+  if (cmds.includes('apiserver')) {
+    require('../config/userapi')(app, config, passport,  models, ensureLoggedIn, bodyParser)
   }
 
   httpServer.listen(config.app.port);

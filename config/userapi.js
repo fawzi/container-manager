@@ -1,23 +1,7 @@
-const ensureLoggedIn = require('connect-ensure-login').ensureLoggedIn;
-const bodyParser = require('body-parser');
-
-module.exports = function (app, config, passport,  models) {
-  app.get('/userapi/login',
-          passport.authenticate(config.passport.strategy,
-                                {
-                                  successReturnToOrRedirect: '/',
-                                  failureRedirect: '/login'
-                                })
-         );
-
-  app.get('/userapi/login/logout', function(req, res){
-    req.logout();
-    res.redirect('/');
-  });
-
+module.exports = function (app, config, passport,  models, ensureLoggedIn, bodyParser) {
   function setJsonApiHeader() {
     return function(req, res, next) {
-      res.setHeader('content-type', 'application/vnd.api+json');
+      res.type('application/vnd.api+json');
       next();
     }
   }
@@ -67,7 +51,6 @@ module.exports = function (app, config, passport,  models) {
   })
 
   app.get('/userapi/notebooks/:id', setJsonApiHeader(), function(req, res){
-    res.setHeader('content-type', 'application/vnd.api+json')
     models.Notebook.findOne({_id: req.params.id},function(err,notebook) {
       if(err) {
         res.send({ errors: [ err ] });
@@ -91,7 +74,6 @@ module.exports = function (app, config, passport,  models) {
   })
 
   app.get('/userapi/rusages', setJsonApiHeader(), function(req, res){
-    res.setHeader('content-type', 'application/vnd.api+json')
     models.Rusage.find({},function(err,rusages) {
       if(err) {
         res.send({ errors: [err] });
@@ -103,14 +85,12 @@ module.exports = function (app, config, passport,  models) {
   })
 
   app.get('/userapi/rusages/:username', setJsonApiHeader(), function(req, res){
-    res.setHeader('content-type', 'application/vnd.api+json')
     models.getRusage(req.params.username, function(err,rusage) {
       if(err) {
         res.send({ errors: [ err ] });
-      } else { // hide if rusage.username != selfUserName(req)??
-        res.send({
-          data: rusageResObj(rusage)
-        });
+      } else {
+ // hide if rusage.username != selfUserName(req)??
+        res.send(rusage)
       }
     });
   })
@@ -134,14 +114,11 @@ module.exports = function (app, config, passport,  models) {
         if (err) {
           res.send({ errors: [err] })
         } else {
-          res.send({
-            data: [ myself.data ],
-            included: myself.included
-          });
+          res.send(myself)
         }
       })
     } else {
-      res.send({
+      res.status(404).send({
         data: null
       })
     }
