@@ -108,6 +108,7 @@ module.exports = function(env,config, models, cmds) {
 
 
   if (cmds.includes('webserver')) {
+    console.log('starting webserver')
     const k8 = require('./kubernetes')(config);
     const k8component = require('./components')(config);
     const ProxyRouter = require('./ProxyRouter')(config,k8, k8component)
@@ -193,6 +194,7 @@ module.exports = function(env,config, models, cmds) {
 
   }
   if (cmds.includes('apiserver')) {
+    console.log('starting apiserver')
     require('../config/userapi')(app, config, passport,  models, ensureLoggedIn, bodyParser)
   }
 

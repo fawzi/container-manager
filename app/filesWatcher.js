@@ -228,6 +228,7 @@ module.exports = function(env, config, models){
 
   verifyPresent();
 
+  console.log('starting watcher')
   var watcher = chokidar.watch(config.userInfo.basePathToWatch+ '/**/*.bkr', {
     usePolling: true // more expensive, but works also on GPFS with updates from multiple machines
   });
