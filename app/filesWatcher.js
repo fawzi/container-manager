@@ -178,7 +178,7 @@ module.exports = function(env, config, models){
         logicalPath: pathInContainer,
         isPublic: isPublic,
         username: user,
-        editLink: '/beaker/#/open?uri=' + pathInContainer,
+        editLink: '/notebook-edit' + pathInContainer,
         title: title,
         authors: authors,
         description: description,
