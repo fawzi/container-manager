@@ -11,6 +11,7 @@ module.exports = {
       localCacheTimeout: 10,
       pageReloadTime: 5,
       frontendAddr: 'http://127.0.0.1:4200',
+      baseUri: 'http://127.0.0.1',
       catchErrors: false
     },
     mongoDb: {
@@ -65,6 +66,7 @@ module.exports = {
         cert: '/certs/cert-7741588557007104.pem'
       },
       frontendAddr: 'https://labdev-nomad.esc.rzg.mpg.de:4200',
+      baseUri: 'https://labdev-nomad.esc.rzg.mpg.de',
       catchErrors: false
     },
     mongoDb: {
@@ -116,6 +118,7 @@ module.exports = {
         key: '/certs/nomad-coe.eu.key.pem'
       },
       frontendAddr: 'https://analytics-toolkit.nomad-coe.eu:4200',
+      baseUri: 'https://analytics-toolkit.nomad-coe.eu',
       catchErrors: true
     },
 	mongoDb: {

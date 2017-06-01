@@ -68,7 +68,7 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
   });
 
   app.get('/notebook-edit/*', ensureLoggedIn('/login'), function(req, res){
-    const target = 'https://labdev-nomad.esc.rzg.mpg.de/beaker/#/open?uri=' + req.url.slice(14, req.url.length).replace("/","%2F")
+    const target = config.app.baseUri + '/beaker/#/open?uri=' + req.url.slice(14, req.url.length).replace("/","%2F")
     console.log(`notebook-edit redirecting to ${target}`)
     res.redirect(302, target);
   });
