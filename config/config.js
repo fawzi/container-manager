@@ -129,8 +129,11 @@ module.exports = {
       host: 'analytics-toolkit.nomad-coe.eu'
     },
     k8Api: {
-      url: 'http://labdev3-nomad.esc.rzg.mpg.de:8080',
-      node: 'labdev3-nomad.esc.rzg.mpg.de'
+      url: 'https://130.183.207.112:6443',
+      node: 'nomad-toolkit-prod2.esc.rzg.mpg.de',
+      ca: '/usr/src/app/certs/ca.cert',
+      cert: '/usr/src/app/certs/client.cert',
+      key: '/usr/src/app/certs/client.key'
     },
     passport: {
       strategy: 'saml',
