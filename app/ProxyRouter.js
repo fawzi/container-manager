@@ -30,11 +30,11 @@ ProxyRouter.prototype.kubernetesServiceLookup = function(req, res, userID, isWeb
   function createService(userID) {
     console.log("trying to create service for the user: " + userID);
     self.set_user_state(userID,self.stateEnum.STARTING);
-    k8.ns(config.k8component.namespace).service.get('beaker-svc-'+userID,function(err, result) {
+    k8.ns(config.k8component.namespace).service.get(config.k8component.imageType + '-svc-'+userID,function(err, result) {
       if(err)
         k8.ns(config.k8component.namespace).service.post({ body: k8component('service', userID)}, function(err, result){
           if(err){
-            console.log("#ERROR# Can't start service for the user: " + userID);
+            console.log(`#ERROR# Can't start service ${config.k8component.imageType} for the user: ${userID}`);
             console.log(stringify(err, null, 2));
           }
           else
@@ -76,7 +76,7 @@ ProxyRouter.prototype.kubernetesServiceLookup = function(req, res, userID, isWeb
   function createReplicationController(userID) {
     console.log("trying to create replication controller for user: " + userID);
 //	createUserDir(userID); //Kubernetes can handle it, but the permissions can be problamatic
-    k8.ns(config.k8component.namespace).replicationcontrollers.get('beaker-rc-'+userID, function(err, result) {
+    k8.ns(config.k8component.namespace).replicationcontrollers.get(config.k8component.imageType + '-rc-' + userID, function(err, result) {
       if(err)
         k8.ns(config.k8component.namespace).replicationcontrollers.post({ body: k8component('replicationController', userID)}, function(err, result){
           if(err){
@@ -94,7 +94,7 @@ ProxyRouter.prototype.kubernetesServiceLookup = function(req, res, userID, isWeb
   function getServicePort(userID) {
     console.log("trying to get service part for user: " + userID);
     self.set_user_state(userID,self.stateEnum.STARTED);
-    k8.ns(config.k8component.namespace).service.get('beaker-svc-'+userID,function(err, result) {
+    k8.ns(config.k8component.namespace).service.get(config.k8component.imageType + '-svc-' + userID,function(err, result) {
       if(err){
         console.log("#ERROR# Can't find service for the user: " + userID);
         console.log(stringify(err, null, 2));
@@ -150,52 +150,64 @@ ProxyRouter.prototype.lookup = function(req, res, userID, isWebsocket, path, nex
     console.log(`Resolved using local cache to ${stringify(target)}`)
     next(target);
   }
-  else {
-    //Check if the path has been defined in the redis client otherwise get it from kubernetes
-    self.client.hget(userID, path, function(err, data) {
-      if (data) {
-        var target = JSON.parse(data);
-        console.log(`Resolved using redis cache to ${stringify(target)}`)
-        // Set cache and expiration
-        if (self.cache[userID] === undefined){
-          self.cache[userID] = { path: target }
-        }
-        else{
-          self.cache[userID][path] = target;
-        }
-        self.expire_route(userID, self.cache_ttl);
-        http.request({method:'HEAD',host:target.host,port:target.port,path: '/'}, (r) => {
-          if(r.statusCode >= 200 && r.statusCode < 400 ){
-            console.log("Forwarding to the target!");
-            self.set_user_state(userID,self.stateEnum.AVAILABLE);
-            next(target);
-          } else {
-            self.expire_route(userID, 0);
-            self.push_user_error(userID, err.message);
-            self.clear_user_state(userID);
-            self.client.hdel(userID, path, () =>{});
-            console.log("Sending message back to the browser!")
-            if (!isWebsocket) {
-              res.send(reloadMsg);
+    else {
+	if (config.specialUsers[userID]) {
+	    target = config.specialUsers[userID]
+       		    // Set cache and expiration
+            if (self.cache[userID] === undefined){
+	      self.cache[userID] = { path: target }
+	    } else {
+	      self.cache[userID][path] = target;
             }
-          }
-        }).setTimeout(1000).on('error', (err) => {
-          self.expire_route(userID, 0);
-          self.push_user_error(userID, err.message);
-          self.clear_user_state(userID);
-          self.client.hdel(userID, path, () =>{});
-          console.log("From error! Sending message back to the browser!")
-          if (!isWebsocket) {
-            res.send(reloadMsg);
-          }
-        }).end();
+            console.log(`Forwarding special user ${userID} to ${stringify(target)}!`);
+            next(target);
+	} else {
+	    //Check if the path has been defined in the redis client otherwise get it from kubernetes
+	    self.client.hget(userID, path, function(err, data) {
+		if (data) {
+		    var target = JSON.parse(data);
+		    console.log(`Resolved using redis cache to ${stringify(target)}`)
+		    // Set cache and expiration
+		    if (self.cache[userID] === undefined){
+			self.cache[userID] = { path: target }
+		    }
+		    else{
+			self.cache[userID][path] = target;
+		    }
+		    self.expire_route(userID, self.cache_ttl);
+		    http.request({method:'HEAD',host:target.host,port:target.port,path: '/'}, (r) => {
+			if(r.statusCode >= 200 && r.statusCode < 400 ){
+			    console.log("Forwarding to the target!");
+			    self.set_user_state(userID,self.stateEnum.AVAILABLE);
+			    next(target);
+			} else {
+			    self.expire_route(userID, 0);
+			    self.push_user_error(userID, err.message);
+			    self.clear_user_state(userID);
+			    self.client.hdel(userID, path, () =>{});
+			    console.log("Sending message back to the browser!")
+			    if (!isWebsocket) {
+				res.send(reloadMsg);
+			    }
+			}
+		    }).setTimeout(1000).on('error', (err) => {
+			self.expire_route(userID, 0);
+			self.push_user_error(userID, err.message);
+			self.clear_user_state(userID);
+			self.client.hdel(userID, path, () =>{});
+			console.log("From error! Sending message back to the browser!")
+			if (!isWebsocket) {
+			    res.send(reloadMsg);
+			}
+		    }).end();
 
-      } else { //Else of path check in redis client
-        //Lookup target from Kubernetes
-        console.log(`Cant resolve using redis cache!!`)
-        self.kubernetesServiceLookup(req, res, userID, isWebsocket, path, next);
-      }
-    });
+		} else { //Else of path check in redis client
+		    //Lookup target from Kubernetes
+		    console.log(`Cant resolve using redis cache!!`)
+		    self.kubernetesServiceLookup(req, res, userID, isWebsocket, path, next);
+		}
+	    });
+	}
   }
 };
 

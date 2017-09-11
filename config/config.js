@@ -1,6 +1,9 @@
 
 module.exports = {
   development: {
+    specialUsers: {
+	sastre: { host: "172.17.0.21", port: 8801}
+    },
     app: {
       name: 'Container per user manager',
       port: process.env.PORT || 80,
@@ -40,7 +43,20 @@ module.exports = {
     },
     k8component: {
       namespace: 'default',
-      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.8.0-145-g491616a8-dirty'
+      images: {
+	  beaker: {
+	      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.8.0-145-g491616a8-dirty',
+	      port: 8801,
+	      prefix: '/beaker',
+	      homePath: '/home/beaker'
+	  },
+	  jupyter: {
+	      image: 'labdev-nomad.esc.rzg.mpg.de:5000/jupyter-notebook',
+	      port: 8888,
+	      prefix: '/jupyter',
+	      homePath: '/home/beaker'
+	  }
+      }
     },
     userInfo: {
 	  basePathToWatch: process.env.HOME + '/nomad/user-data',
@@ -52,6 +68,9 @@ module.exports = {
 	}
   },
   labdev: {
+    specialUsers: {	
+      sastre: { host: "172.17.0.21", port: 8801}
+    },
     app: {
       name: 'User container manager',
       port: process.env.PORT || 443,
@@ -92,7 +111,20 @@ module.exports = {
     },
     k8component: {
       namespace: 'default',
-      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.8.0-145-g491616a8-dirty'
+      images: {
+	  beaker: {
+	      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.8.0-145-g491616a8-dirty',
+	      port: 8801,
+	      prefix: '/beaker',
+	      homePath: '/home/beaker'
+	  },
+	  jupyter: {
+	      image: 'labdev-nomad.esc.rzg.mpg.de:5000/jupyter-notebook',
+	      port: 8888,
+	      prefix: '/jupyter',
+	      homePath: '/home/beaker'
+	  }
+      }
     },    
     userInfo: {
 	  basePathToWatch: '/nomad/nomadlab/beaker-notebooks/user-data',
@@ -104,6 +136,7 @@ module.exports = {
 	}
   },
   analyticsToolkit: {
+    specialUsers: {},
     app: {
       name: 'User container manager',
       port: process.env.PORT || 443,
@@ -147,7 +180,20 @@ module.exports = {
     },
     k8component: {
       namespace: 'default',
-      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.8.0-145-g491616a8-dirty'
+      images: {
+	  beaker: {
+	      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.8.0-145-g491616a8-dirty',
+	      port: 8801,
+	      prefix: '/beaker',
+	      homePath: '/home/beaker'
+	  },
+	  jupyter: {
+	      image: 'labdev-nomad.esc.rzg.mpg.de:5000/jupyter-notebook',
+	      port: 8888,
+	      prefix: '/jupyter',
+	      homePath: '/home/beaker'
+	  }
+      }
     },
     userInfo: {
 	  basePathToWatch: '/nomad/nomadlab/beaker-notebooks/user-data',

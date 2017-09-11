@@ -13,27 +13,31 @@ var createNamespaceConfig = function(user) {
 };
 
 var createServiceConfig = function(user) {
+  var imageType = config.k8component.imageType
+  var imageInfo = config.k8component.images[imageType]
+  if (!imageInfo)
+      throw new Error(`could not fing image ${imageType} in ${JSON.stringify(imageInfo)}`)
   const service= {
     "kind": "Service",
     "apiVersion": "v1",
     "metadata": {
-      "name": "beaker-svc-"+user,
+      "name": imageType + "-svc-"+user,
       "labels": {
         "user": user,
-        "app": "beaker"
+        "app": imageType
       }
     },
     "spec":{
       "type": "NodePort",
       "ports":[{
         "port": 8801,
-        "name": "beaker-port",
-        "targetPort": 8801,
+        "name": imageType + "-port",
+        "targetPort": imageInfo.port,
         "protocol": "TCP"
       }],
       "selector":{
         "user": user,
-        "app": "beaker"
+        "app": imageType
         }
     }
   };
@@ -41,37 +45,41 @@ var createServiceConfig = function(user) {
 };
 
 var createRcControllerConfig = function(user) {
+  var imageType = config.k8component.imageType
+  var imageInfo = config.k8component.images[imageType]
+  if (!imageInfo)
+      throw new Error(`could not fing image ${imageType} in ${JSON.stringify(imageInfo)}`)
   const rcController = {
     "apiVersion": "v1",
     "kind": "ReplicationController",
     "metadata": {
-      "name": "beaker-rc-"+user,
+      "name": imageType + "-rc-" + user,
       "labels": {
         "user": user,
-        "app": "beaker"
+        "app": imageType
       },
     },
     "spec": {
       "replicas": 1,
       "selector":{
         "user": user,
-        "app": "beaker"
+        "app": imageType
         },
       "template": {
         "metadata": {
           "labels": {
             "user":user,
-            "app": "beaker"
+            "app": imageType
           }
         },
         "spec": {
           "containers": [
             {
-              "image": config.k8component.image,
-              "name": "beaker",
+              "image": imageInfo.image,
+              "name": imageType,
               "ports": [
                 {
-                  "containerPort": 8801,
+                  "containerPort": imageInfo.port,
                   "name": "main-port",
                   "protocol": "TCP"
                 }
@@ -94,7 +102,7 @@ var createRcControllerConfig = function(user) {
                   "readOnly": true
                 },
                 {
-                  "mountPath": "/home/beaker/notebooks",
+                  "mountPath": imageInfo.homePath+"/notebooks",
                   "name": "notebooks-data-volume",
                   "readOnly": true
                 },
