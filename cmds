@@ -3,6 +3,8 @@
 #docker run --userns=host --net multi-user-net --ip 192.168.0.157  -p 80:80 -v $PWD:/usr/src/app -w /usr/src/app -v ~/.minikube/:/.minikube/:ro -it node:6 bash
 #On local-machine;  To be run from the folder where nodejs code is present
 
+#redis
+docker run --name redis-db -d -p 6390:6379 redis:3.2
 #MongoDB
 docker run --name filemanager-mongo -p 27017:27017 --restart=unless-stopped -d mongo
 
