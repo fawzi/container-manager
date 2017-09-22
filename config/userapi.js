@@ -152,10 +152,12 @@ module.exports = function (app, config, passport, models, ensureLoggedIn, bodyPa
     });
   });
 
+  /**
+   * Returns a list of RCs associated with the user's account
+   */
   app.get('/userapi/containers', function (req, res) {
-    const k8 = require('./kubernetes')(config);
-    const k8component = require('./components')(config);
-    const ProxyRouter = require('./ProxyRouter')(config, k8, k8component);
+    const k8 = require('../app/models/kubernetes')(config);
+    const k8component = require('../app/models/components')(config);
     k8.ns(config.k8component.namespace).rc.get(config.k8component.imageType + '-rc-' + userID, function (err, result) {
       if (!err) {
         res.send(result);
