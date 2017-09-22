@@ -32,7 +32,7 @@ module.exports = function (app, config, passport, models, ensureLoggedIn, bodyPa
         res.redirect('/');
       }
     }
-  );
+  ); 
 
 
   app.get('/userapi', function (req, res) {
@@ -155,10 +155,11 @@ module.exports = function (app, config, passport, models, ensureLoggedIn, bodyPa
   /**
    * Returns a list of RCs associated with the user's account
    */
-  app.get('/userapi/containers', function (req, res) {
+  app.get('/userapi/containers/:username', function (req, res) {
     const k8 = require('../app/kubernetes')(config);
     const k8component = require('../app/components')(config);
-    k8.ns(config.k8component.namespace).rc.get(config.k8component.imageType + '-rc-' + userID, function (err, result) {
+    var username = req.params.username;
+    k8.ns(config.k8component.namespace).rc.get(config.k8component.imageType + '-rc-' + username, function (err, result) {
       if (!err) {
         res.send(result);
       } else res.send(err);
