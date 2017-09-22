@@ -2,7 +2,7 @@
 module.exports = {
   development: {
     specialUsers: {
-	sastre: { host: "172.17.0.21", port: 8801}
+	pepe: { host: "172.17.0.21", port: 8801}
     },
     app: {
       name: 'Container per user manager',
@@ -51,7 +51,7 @@ module.exports = {
 	      homePath: '/home/beaker'
 	  },
 	  jupyter: {
-	      image: 'labdev-nomad.esc.rzg.mpg.de:5000/jupyter-notebook',
+	      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook-jupyter-libatoms-tutorial',
 	      port: 8888,
 	      prefix: '/jupyter',
 	      homePath: '/home/beaker'
@@ -119,7 +119,7 @@ module.exports = {
 	      homePath: '/home/beaker'
 	  },
 	  jupyter: {
-	      image: 'labdev-nomad.esc.rzg.mpg.de:5000/jupyter-notebook',
+	      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook-jupyter-libatoms-tutorial',
 	      port: 8888,
 	      prefix: '/jupyter',
 	      homePath: '/home/beaker'
@@ -188,7 +188,7 @@ module.exports = {
 	      homePath: '/home/beaker'
 	  },
 	  jupyter: {
-	      image: 'labdev-nomad.esc.rzg.mpg.de:5000/jupyter-notebook',
+	      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook-jupyter-libatoms-tutorial',
 	      port: 8888,
 	      prefix: '/jupyter',
 	      homePath: '/home/beaker'

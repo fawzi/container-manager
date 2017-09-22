@@ -34,7 +34,7 @@ ProxyRouter.prototype.kubernetesServiceLookup = function(req, res, userID, isWeb
       if(err)
         k8.ns(config.k8component.namespace).service.post({ body: k8component('service', userID)}, function(err, result){
           if(err){
-            console.log(`#ERROR# Can't start service ${config.k8component.imageType} for the user: ${userID}`);
+            console.log(`#ERROR# Cannot start service ${config.k8component.imageType} for the user: ${userID}`);
             console.log(stringify(err, null, 2));
           }
           else
@@ -176,16 +176,16 @@ ProxyRouter.prototype.lookup = function(req, res, userID, isWebsocket, path, nex
 		    }
 		    self.expire_route(userID, self.cache_ttl);
 		    http.request({method:'HEAD',host:target.host,port:target.port,path: '/'}, (r) => {
-			if(r.statusCode >= 200 && r.statusCode < 400 ){
+			if(r.statusCode >= 200 && r.statusCode < 500 ){
 			    console.log("Forwarding to the target!");
 			    self.set_user_state(userID,self.stateEnum.AVAILABLE);
 			    next(target);
 			} else {
 			    self.expire_route(userID, 0);
-			    self.push_user_error(userID, err.message);
+			    self.push_user_error(userID, `ERROR, statusCode: ${r.statusCode}, err: ${JSON.stringify(err)}`);
 			    self.clear_user_state(userID);
 			    self.client.hdel(userID, path, () =>{});
-			    console.log("Sending message back to the browser!")
+			    console.log(`ERROR, statusCode: ${r.statusCode}, err: ${JSON.stringify(err)}, Sending message back to the browser!`)
 			    if (!isWebsocket) {
 				res.send(reloadMsg);
 			    }

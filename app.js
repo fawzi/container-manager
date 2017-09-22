@@ -11,6 +11,7 @@ function main() {
   var cmds = []
   var imageType = "beaker"
   const usage = `node ${args[1]} [-h|--help] [--image-type [beaker|jupyter]] [webserver|watcher]`
+    console.log(`Started with arguments ${JSON.stringify(args)}`)
   while (iarg < args.length) {
     var arg = args[iarg]
     iarg += 1
@@ -18,12 +19,12 @@ function main() {
       console.log(usage)
       return;
     } else if (arg == "--image-type") {
-      iarg += 1
-      if (iarg > args.length) {
+      if (iarg >= args.length) {
 	console.log(`Expected image type after --image-type, ${usage}`)
         return;
       }
       imageType = args[iarg]
+      iarg += 1
     } else if (arg == "webserver") {
       cmds.push("webserver")
     } else if (arg == "apiserver") {
