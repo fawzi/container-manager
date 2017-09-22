@@ -152,7 +152,7 @@ module.exports = function (app, config, passport, models, ensureLoggedIn, bodyPa
     });
   });
 
-  app.get('/containersForUser', function (req, res) {
+  app.get('/userapi/containers', function (req, res) {
     const k8 = require('./kubernetes')(config);
     const k8component = require('./components')(config);
     const ProxyRouter = require('./ProxyRouter')(config, k8, k8component);
