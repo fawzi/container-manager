@@ -155,11 +155,11 @@ module.exports = function (app, config, passport, models, ensureLoggedIn, bodyPa
   /**
    * Returns a list of RCs associated with the user's account
    */
-  app.get('/userapi/containers/:username', function (req, res) {
+  app.get('/userapi/containers/:imagetype/:username', function (req, res) {
     const k8 = require('../app/kubernetes')(config);
     const k8component = require('../app/components')(config);
     var username = req.params.username;
-    k8.namespaces.replicationcontrollers.get(config.k8component.imageType + '-svc-' + username, function (err, result) {
+    k8.namespaces.replicationcontrollers.get(imagetype + '-svc-' + username, function (err, result) {
       if (!err) {
         res.send(result);
       } else res.send(err);
