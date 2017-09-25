@@ -159,6 +159,7 @@ module.exports = function (app, config, passport, models, ensureLoggedIn, bodyPa
     const k8 = require('../app/kubernetes')(config);
     const k8component = require('../app/components')(config);
     var username = req.params.username;
+    var imagetype = req.params.imagetype;
     k8.namespaces.replicationcontrollers.get(imagetype + '-svc-' + username, function (err, result) {
       if (!err) {
         res.send(result);
