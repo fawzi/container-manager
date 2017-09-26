@@ -160,7 +160,9 @@ module.exports = function (app, config, passport, models, ensureLoggedIn, bodyPa
     const k8component = require('../app/components')(config);
     var username = req.params.username;
     var imagetype = req.params.imagetype;
-    k8.namespaces.replicationcontrollers.get(imagetype + '-svc-' + username, function (err, result) {
+    var searchPhrase = imagetype + '-rc-' + username;
+    console.log("Searching for replication controllers: " + searchPhrase);
+    k8.namespaces.replicationcontrollers.get(searchPhrase, function (err, result) {
       if (!err) {
         res.send(result);
       } else res.send(err);
