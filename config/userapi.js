@@ -153,7 +153,7 @@ module.exports = function (app, config, passport, models, ensureLoggedIn, bodyPa
   });
 
   /**
-   * Returns a list of RCs associated with the user's account
+   * Returns a list of RCs for a certain type of notebooks (imagetype) associated with the user's account (username)
    */
   app.get('/userapi/containers/:imagetype/:username', function (req, res) {
     const k8 = require('../app/kubernetes')(config);
@@ -163,6 +163,21 @@ module.exports = function (app, config, passport, models, ensureLoggedIn, bodyPa
     var searchPhrase = imagetype + '-rc-' + username;
     console.log("Searching for replication controllers: " + searchPhrase);
     k8.namespaces.replicationcontrollers.get(searchPhrase, function (err, result) {
+      if (!err) {
+        res.send(result);
+      } else res.send(err);
+    });
+  });
+
+  /**
+   * Delete an RC using its name (rcname)
+   */
+  app.get('/userapi/delete-container/:rcname', function (req, res) {
+    const k8 = require('../app/kubernetes')(config);
+    const k8component = require('../app/components')(config);
+    var rcName = req.params.rcname;
+    console.log("Deleting replication controller: " + rcName);
+    k8.namespaces.replicationcontrollers.delete({ name: rcName, preservePods: false }, function (err, result) {
       if (!err) {
         res.send(result);
       } else res.send(err);
