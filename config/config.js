@@ -45,7 +45,7 @@ module.exports = {
       namespace: 'default',
       images: {
 	  beaker: {
-	      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.8.0-213-g281debed-dirty',
+	      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.8.0-214-gdd60aa28-dirty',
 	      port: 8801,
 	      prefix: '/beaker',
 	      homePath: '/home/beaker'
@@ -113,7 +113,7 @@ module.exports = {
       namespace: 'default',
       images: {
 	  beaker: {
-	      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.8.0-213-g281debed-dirty',
+	      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.8.0-214-gdd60aa28-dirty',
 	      port: 8801,
 	      prefix: '/beaker',
 	      homePath: '/home/beaker'
@@ -182,7 +182,7 @@ module.exports = {
       namespace: 'default',
       images: {
 	  beaker: {
-	      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.8.0-213-g281debed-dirty',
+	      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.8.0-214-gdd60aa28-dirty',
 	      port: 8801,
 	      prefix: '/beaker',
 	      homePath: '/home/beaker'
