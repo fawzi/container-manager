@@ -163,7 +163,7 @@ module.exports = {
     },
     k8Api: {
       url: 'https://130.183.207.112:6443',
-      node: 'nomad-toolkit-prod2.esc.rzg.mpg.de',
+      node: 'nomad-flink-03.esc.rzg.mpg.de',
       ca: '/usr/src/app/certs/ca.cert',
       cert: '/usr/src/app/certs/client.cert',
       key: '/usr/src/app/certs/client.key'
