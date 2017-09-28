@@ -230,7 +230,9 @@ module.exports = function(env, config, models){
 
   console.log('starting watcher')
   var watcher = chokidar.watch(config.userInfo.basePathToWatch+ '/**/*.bkr', {
-    usePolling: true // more expensive, but works also on GPFS with updates from multiple machines
+    usePolling: true, // more expensive, but works also on GPFS with updates from multiple machines
+    interval: 1000,
+    binaryInterval: 3000
   });
   watcher.on('add', (path,stats) => {
     addNewNotebook(path, stats)
