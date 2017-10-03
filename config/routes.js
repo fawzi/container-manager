@@ -48,7 +48,7 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
   app.all('/*', ensureLoggedIn('/login'), function (req, res) {
     //  res.send(`<meta http-equiv="refresh" content="5" > <h3>Please wait while we start a container for you!</h3>`);
     console.log('Pre redirect, Retrieved session: '+JSON.stringify(req.session, null, 2))
-    redirect(req, res, req.user.id, false, '/beaker', function(route){
+    redirect(req, res, req.user.id, false, config.k8component['imageType'], function(route){
       proxyServer.web(req, res,{
         target: route
       });

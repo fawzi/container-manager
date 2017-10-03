@@ -180,7 +180,7 @@ module.exports = function(env,config, models, cmds) {
         var sessionID = req.cookies['connect.sid'];
         sessionManager(req, {}, function(){
           try{
-            redirect( req, {}, req.session.passport.user.id, true, '/beaker', function(route){
+            redirect( req, {}, req.session.passport.user.id, true, config.k8component['imageType'], function(route){
               var wsSocket = 'ws://'+route.host +':'+ route.port + req.url;
               proxyServer.ws(req, socket, head, { target: wsSocket });
             });
