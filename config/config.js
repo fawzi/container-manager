@@ -53,6 +53,12 @@ module.exports = {
 	      port: 8888,
 	      prefix: '/jupyter',
 	      homePath: '/home/beaker'
+	  },
+	  creedo: {
+	      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/creedo:v0.4.2-2017-09-29',
+	      port: 8080,
+	      prefix: '/Creedo',
+	      homePath: '/home/creedo'
 	  }
       }
     },
@@ -119,6 +125,12 @@ module.exports = {
 	      port: 8888,
 	      prefix: '/jupyter',
 	      homePath: '/home/beaker'
+	  },
+	  creedo: {
+	      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/creedo:v0.4.2-2017-09-29',
+	      port: 8080,
+	      prefix: '/Creedo',
+	      homePath: '/home/creedo'
 	  }
       }
     },    
@@ -188,6 +200,12 @@ module.exports = {
 	      port: 8888,
 	      prefix: '/jupyter',
 	      homePath: '/home/beaker'
+	  },
+	  creedo: {
+	      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/creedo:v0.4.2-2017-09-29',
+	      port: 8080,
+	      prefix: '/Creedo',
+	      homePath: '/home/creedo'
 	  }
       }
     },
