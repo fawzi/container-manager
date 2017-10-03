@@ -1,9 +1,7 @@
 
 module.exports = {
   development: {
-    specialUsers: {
-	pepe: { host: "172.17.0.21", port: 8801}
-    },
+    specialUsers: { },
     app: {
       name: 'Container per user manager',
       port: process.env.PORT || 80,
@@ -51,7 +49,7 @@ module.exports = {
 	      homePath: '/home/beaker'
 	  },
 	  jupyter: {
-	      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook-jupyter-libatoms-tutorial',
+	      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook-jupyter-libatoms-tutorial:v0.4',
 	      port: 8888,
 	      prefix: '/jupyter',
 	      homePath: '/home/beaker'
@@ -68,9 +66,7 @@ module.exports = {
 	}
   },
   labdev: {
-    specialUsers: {	
-      sastre: { host: "172.17.0.21", port: 8801}
-    },
+    specialUsers: { },
     app: {
       name: 'User container manager',
       port: process.env.PORT || 443,
@@ -119,7 +115,7 @@ module.exports = {
 	      homePath: '/home/beaker'
 	  },
 	  jupyter: {
-	      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook-jupyter-libatoms-tutorial',
+	      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook-jupyter-libatoms-tutorial:v0.4',
 	      port: 8888,
 	      prefix: '/jupyter',
 	      homePath: '/home/beaker'
@@ -188,7 +184,7 @@ module.exports = {
 	      homePath: '/home/beaker'
 	  },
 	  jupyter: {
-	      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook-jupyter-libatoms-tutorial',
+	      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook-jupyter-libatoms-tutorial:v0.4',
 	      port: 8888,
 	      prefix: '/jupyter',
 	      homePath: '/home/beaker'
