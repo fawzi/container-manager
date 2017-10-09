@@ -17,7 +17,6 @@ module.exports = function (app, config, passport, models, ensureLoggedIn, bodyPa
     return selfName
   }
 
-
   //Passport SAML request is not accepted until the body is parsed. And since bodyParser can not used in the express app, it is called here separately.
   app.post(config.passport.saml.path, bodyParser.json(), bodyParser.urlencoded({ extended: true }),
     passport.authenticate(config.passport.strategy,
@@ -155,10 +154,10 @@ module.exports = function (app, config, passport, models, ensureLoggedIn, bodyPa
   /**
    * Returns a list of RCs for a certain type of notebooks (imagetype) associated with the user's account (username)
    */
-  app.get('/userapi/containers/:imagetype/:username', function (req, res) {
+  app.get('/userapi/mycontainers/:imagetype', function (req, res) {
     const k8 = require('../app/kubernetes')(config);
     const k8component = require('../app/components')(config);
-    var username = req.params.username;
+    var username = selfUserName(req);
     var imagetype = req.params.imagetype;
     var searchPhrase = imagetype + '-rc-' + username;
     console.log("Searching for replication controllers: " + searchPhrase);
@@ -176,12 +175,22 @@ module.exports = function (app, config, passport, models, ensureLoggedIn, bodyPa
     const k8 = require('../app/kubernetes')(config);
     const k8component = require('../app/components')(config);
     var rcName = req.params.rcname;
-    console.log("Deleting replication controller: " + rcName);
-    k8.namespaces.replicationcontrollers.delete({ name: rcName, preservePods: false }, function (err, result) {
-      if (!err) {
-        res.send(result);
-      } else res.send(err);
-    });
+    var loggedUsername = selfUserName(req);
+    var rcUsername = rcName.split('-')[2];
+    if (rcUsername && loggedUsername === rcUsername) {
+      console.log("Deleting replication controller: " + rcName);
+      k8.namespaces.replicationcontrollers.delete({ name: rcName, preservePods: false }, function (err, result) {
+        if (!err) {
+          res.send(result);
+        } else res.send(err);
+      });
+    } else {
+      if (rcUsername)
+        res.send({ error: 'You don\'t have the right to delete that container.' });
+      else {
+        res.send({ error: 'The RC name is incorrectly formatted.' });
+      }
+    }
   });
 
   app.get('/notebook-edit/*', function (req, res) {
