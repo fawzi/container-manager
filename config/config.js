@@ -33,7 +33,7 @@ module.exports = {
       strategy: 'saml',
       saml: {
         path: process.env.SAML_PATH || '/login/callback',
-        entryPoint: process.env.SAML_ENTRY_POINT || 'https://nomad-login.csc.fi/idp/profile/SAML2/Redirect/SSO',
+        entryPoint: process.env.SAML_ENTRY_POINT || 'https://idp.nomad-coe.eu/idp/profile/SAML2/Redirect/SSO',
         issuer: 'http://172.24.131.117/shibboleth',
         identifierFormat: null,
         acceptedClockSkewMs: -1
@@ -105,7 +105,7 @@ module.exports = {
       strategy: 'saml',
       saml: {
         path: process.env.SAML_PATH || '/login/callback',
-        entryPoint: process.env.SAML_ENTRY_POINT || 'https://nomad-login.csc.fi/idp/profile/SAML2/Redirect/SSO',
+        entryPoint: process.env.SAML_ENTRY_POINT || 'https://idp.nomad-coe.eu/idp/profile/SAML2/Redirect/SSO',
         issuer: 'https://labdev-nomad.esc.rzg.mpg.de/shibboleth',
         identifierFormat: null,
         acceptedClockSkewMs: -1
@@ -180,7 +180,7 @@ module.exports = {
       strategy: 'saml',
       saml: {
         path: process.env.SAML_PATH || '/login/callback',
-        entryPoint: process.env.SAML_ENTRY_POINT || 'https://nomad-login.csc.fi/idp/profile/SAML2/Redirect/SSO',
+        entryPoint: process.env.SAML_ENTRY_POINT || 'https://idp.nomad-coe.eu/idp/profile/SAML2/Redirect/SSO',
         issuer: 'https://analytics-toolkit.nomad-coe.eu/shibboleth',
         identifierFormat: null,
         acceptedClockSkewMs: -1
