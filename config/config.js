@@ -131,6 +131,12 @@ module.exports = {
 	      port: 8080,
 	      prefix: '/Creedo',
 	      homePath: '/home/creedo'
+          },
+	  remotevis: {
+	      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook-jupyter-libatoms-tutorial',
+	      port: 8888,
+	      prefix: '/jupyter',
+	      homePath: '/home/beaker'
 	  }
       }
     },    
