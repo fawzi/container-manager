@@ -43,7 +43,7 @@ module.exports = {
       namespace: 'default',
       images: {
 	  beaker: {
-	      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.8.0-214-gdd60aa28-dirty',
+	      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.8.0-305-gaf64b6eb-dirty',
 	      port: 8801,
 	      prefix: '/beaker',
 	      homePath: '/home/beaker'
@@ -98,7 +98,10 @@ module.exports = {
       host: 'labdev-nomad.esc.rzg.mpg.de'
     },
     k8Api: {
-      url: 'http://labdev3-nomad.esc.rzg.mpg.de:8080',
+      url: 'https://130.183.207.101:6443',
+      ca: '/usr/src/app/certs/ca.cert',
+      cert: '/usr/src/app/certs/client.cert',
+      key: '/usr/src/app/certs/client.key',
       node: 'labdev3-nomad.esc.rzg.mpg.de'
     },
     passport: {
@@ -115,7 +118,7 @@ module.exports = {
       namespace: 'default',
       images: {
 	  beaker: {
-	      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.8.0-214-gdd60aa28-dirty',
+	      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.8.0-305-gaf64b6eb-dirty',
 	      port: 8801,
 	      prefix: '/beaker',
 	      homePath: '/home/beaker'
@@ -196,7 +199,7 @@ module.exports = {
       namespace: 'default',
       images: {
 	  beaker: {
-	      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.8.0-214-gdd60aa28-dirty',
+	      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.8.0-305-gaf64b6eb-dirty',
 	      port: 8801,
 	      prefix: '/beaker',
 	      homePath: '/home/beaker'
