@@ -1,177 +1,114 @@
 
 module.exports = function (config) {
-
-var createNamespaceConfig = function(user) {
-  const namespace =  {
-    "kind": "Namespace",
-    "apiVersion": "v1",
-    "metadata": {
-     "name": user
-    }
+  const handlebars = require('handlebars');
+  const fs = require('fs');
+  const path = require('path');
+  const baseDir = path.resolve(__dirname, '..')
+  const cconfig = config.k8component
+  const userSettings = require('userSettings')
+  
+  var baseRepl = {
+    baseDir: baseDir
   };
-  return(namespace);
-};
+  for (k in config.app.baseReplacements)
+    repl[k] = baseRepl[k];
+  const templatesDir = handlebars.compile(config.app.templatesDir)(baseRepl)
+  baseRepl['templatesDir'] = templatesDir
+  baseRepl['namespace'] = cconfig.namespace
 
-var createServiceConfig = function(user) {
-  var imageType = config.k8component.imageType
-  var imageInfo = config.k8component.images[imageType]
-  if (!imageInfo)
-      throw new Error(`could not fing image ${imageType} in ${JSON.stringify(imageInfo)}`)
-  const service= {
-    "kind": "Service",
-    "apiVersion": "v1",
-    "metadata": {
-      "name": imageType + "-svc-"+user,
-      "labels": {
-        "user": user,
-        "app": imageType
+  // Given a path loads it and compiles a template for it, use loadTemplate that has caching
+  function loadTemplateInternal(templatePath, next) {
+    const templateRealPath = path.join(templatesDir, templatePath || "defaultTemplate.yaml")
+    fs.readFile(templateRealPath, 'utf8', function(err, data) {
+      if (err) {
+        err.message = err.message + ` loading ${templateRealPath}`
+        next(err,null)
+      } else {
+        const template = handlebars.compile(data)
+        next(null, template)
       }
-    },
-    "spec":{
-      "type": "NodePort",
-      "ports":[{
-        "port": 8801,
-        "name": imageType + "-port",
-        "targetPort": imageInfo.port,
-        "protocol": "TCP"
-      }],
-      "selector":{
-        "user": user,
-        "app": imageType
+    })
+  }
+  
+  const templateCache = require('../safe-memory-cache/map.js')({
+    limit = cconfig.templateCacheNMax,
+    opts.maxTTL = cconfig.templateCacheTtlMaxMs,
+    refreshF = function(key, value) {
+      loadTemplateInternal(key, function(err, t) {
+        if (err) {
+          console.log(`refresh of template ${key} failed with ${JSON.stringify(err)}, keeping old value`)
+          this.set(key, value)
+        } else {
+          this.set(key,t)
         }
+      })
     }
-  };
-  return(service);
-};
+  })
 
-var createRcControllerConfig = function(user) {
-  var imageType = config.k8component.imageType
-  var imageInfo = config.k8component.images[imageType]
-  if (!imageInfo)
-      throw new Error(`could not fing image ${imageType} in ${JSON.stringify(imageInfo)}`)
-  const rcController = {
-    "apiVersion": "v1",
-    "kind": "ReplicationController",
-    "metadata": {
-      "name": imageType + "-rc-" + user,
-      "labels": {
-        "user": user,
-        "app": imageType
-      },
-    },
-    "spec": {
-      "replicas": 1,
-      "selector":{
-        "user": user,
-        "app": imageType
-        },
-      "template": {
-        "metadata": {
-          "labels": {
-            "user":user,
-            "app": imageType
-          }
-        },
-        "spec": {
-          "containers": [
-            {
-              "image": imageInfo.image,
-              "name": imageType,
-              "ports": [
-                {
-                  "containerPort": imageInfo.port,
-                  "name": "main-port",
-                  "protocol": "TCP"
-                }
-              ],
-              "env": [
-                {"name": "NOMAD_USER", "value": user },
-                {"name": "NOMAD_BASE_URI", "value": config.app.baseUri }
-              ],
-              "imagePullPolicy": "IfNotPresent",
-              "volumeMounts": [
-                {
-                  "mountPath": "/raw-data",
-                  "name": "raw-data-volume",
-                  "readOnly": true
-                },
-                {
-                  "mountPath": "/parsed",
-                  "name": "parsed-data-volume",
-                  "readOnly": true
-                },
-                {
-                  "mountPath": "/normalized",
-                  "name": "normalized-data-volume",
-                  "readOnly": true
-                },
-                {
-                  "mountPath": imageInfo.homePath+"/notebooks",
-                  "name": "notebooks-data-volume",
-                  "readOnly": true
-                },
-                {
-                  "mountPath": config.userInfo.privateDirInContainer+ "/" + user,
-                  "name": "private-data-volume"
-                },
-                {
-                  "mountPath": config.userInfo.sharedDirInContainer,
-                  "name": "shared-data-volume",
-                  "readOnly": true
-                },
-                {
-                  "mountPath": config.userInfo.sharedDirInContainer + "/" + user,
-                  "name": "my-shared-data-volume"
-                }
-              ]
-            }
-          ]
-          ,
-          volumes: [
-            {
-              "name": "parsed-data-volume",
-              "hostPath": { "path": "/nomad/nomadlab/parsed" }
-            },
-            {
-              "name": "raw-data-volume",
-              "hostPath": { "path": "/nomad/nomadlab/raw-data"}
-            },
-            {
-              "name": "normalized-data-volume",
-              "hostPath": { "path": "/nomad/nomadlab/normalized" }
-            },
-            {
-              "name": "notebooks-data-volume",
-              "hostPath": { "path": "/nomad/nomadlab/beaker-notebooks/notebooks" }
-            },
-            {
-              "name": "private-data-volume",
-              "hostPath": { "path": config.userInfo.privateDir + '/' + user }
-            },
-            {
-              "name": "shared-data-volume",
-              "hostPath": { "path": config.userInfo.sharedDir }
-            },
-			{
-              "name": "my-shared-data-volume",
-              "hostPath": { "path": config.userInfo.sharedDir + '/' + user }
-            }
-          ]
+  // function that loads and and compiles a template, with caching
+  function loadTemplate(templatePath, next) {
+    const v = templateCache.get(templatePath)
+    if (v === undefined) {
+      loadTemplateInternal(templatePath, function(err, t) {
+        if (err) {
+          console.log(`template ${templatePath} loading failed with ${JSON.stringify(err)}, putting null`)
+          templateCache.set(templatePath, null)
+          next(err, null)
+        } else {
+          this.set(templatePath, t)
+          next(null, t)
         }
+      })
+    } else {
+      next(null, v)
+    }
+  }
+  
+  // evaluates a template
+  function evalTemplate(templatePath, extraRepl, next) {
+    loadTemplate(templatePath, function (err, template) {
+      if (err) {
+        next(err, null)
+      } else {
+        const repl = Object.assign({}, extraRepl, baseRepl)
+        const res = template(repl)
+        //console.log(`evaluating <<${data}>> with ${JSON.stringify(repl)} gives <<${res}>>`)
+        next(null, res, repl)
+      }
+    })
+  }
+
+  function namespaceTemplate(name, next) {
+    evalTemplate("namespace.yaml", { namespace: name }, next)
+  }
+
+  function templateForImageType(imageType, user, extraRepl, next) {
+    var repl = {}
+    const toSkip = ['images']
+    for (k <- cconfig) {
+      if (toSkip.indexOf(k) == -1) {
+        rep[k] = config[k]
       }
     }
-  };
-  return(rcController);
-};
+    const imgSettings = cconfig[imageType]
+    for (k <- imgSettings)
+      repl[k] = imgSettings[k]
+  
+    const userRepl = userSettings.getSettings(user, 'image:' + imageType)
+    for (k <- userRepl)
+      repl[k] = userRepl[k]
 
-const getk8componentConfig = function (k8component,k8componentName) {
-  if(k8component === "namespace")
-    return(createNamespaceConfig(k8componentName))
-  else if (k8component === "service")
-   return(createServiceConfig(k8componentName))
-  else if (k8component === "replicationController")
-   return(createRcControllerConfig(k8componentName))
-};
+    for (k <- extraRepl)
+      repl[k] = userRepl[k]
+    
+    repl['user'] = user
 
-return(getk8componentConfig);
-};
+    evalTemplate(repl['templatePath'], repl, next)
+  }
+
+  return {
+    evalTemplate: evalTemplate,
+    namespaceTemplate: namespaceTemplate,
+    templateForImageType: templateForImageType
+  }
+}
