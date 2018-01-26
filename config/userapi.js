@@ -6,7 +6,7 @@ module.exports = function (app, config, passport, models, ensureLoggedIn, bodyPa
     }
   }
 
-  // returns the name of the logget in user
+  // returns the name of the logged in user
   function selfUserName(req) {
     var selfName;
     try {
@@ -33,6 +33,11 @@ module.exports = function (app, config, passport, models, ensureLoggedIn, bodyPa
     }
   );
 
+
+  /*app.get('/userapi/settings/:app/:key', setJsonApiHeader(), function (req, res) {
+    req.params.app
+    res.send('Working');
+  });*/
 
   app.get('/userapi', function (req, res) {
     res.send('Working');

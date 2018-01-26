@@ -1,0 +1,85 @@
+app: {
+  name: "Container per user manager"
+  port: 80
+  secret: "theTreeInFront"
+  localOverride: "/localoverride"
+  maxErrorQueue: 10
+  redisTimeout: 3600
+  localCacheTimeout: 10
+  pageReloadTime: 5
+  frontendAddr: "http://127.0.0.1:4200"
+  baseUri: "http://127.0.0.1"
+  catchErrors: false
+  templatesDir: "{{baseDir}}/templates"
+  baseReplacements: {}
+}
+mongoDb: {
+  url: "mongodb://labdev-nomad.esc.rzg.mpg.de/filedatabase"
+}
+session_redis: {
+  port: 6390
+  host: "labdev-nomad.esc.rzg.mpg.de"
+}
+usersettings_redis: {
+  port: 6391
+  host: "labdev-nomad.esc.rzg.mpg.de"
+}
+k8Api: {
+  url: "https://labdev3-nomad.esc.rzg.mpg.de:6443"
+  node: "labdev3-nomad.esc.rzg.mpg.de"
+  ca: "/usr/src/app/certs/ca.cert"
+  cert: "/nomad/nomadlab/servers/labdev-nomad/kubernetes/kubelet-client.crt"
+  key: "/nomad/nomadlab/servers/labdev-nomad/kubernetes/kubelet-client.key"
+}
+passport: {
+  strategy: "saml"
+  saml: {
+    path: process.env.SAML_PATH || "/login/callback"
+    entryPoint: process.env.SAML_ENTRY_POINT || "https://idp.nomad-coe.eu/idp/profile/SAML2/Redirect/SSO",
+    issuer: "https://labdev-nomad.esc.rzg.mpg.de/shibboleth",
+    identifierFormat: null,
+    acceptedClockSkewMs: -1
+  }
+},
+k8component: {
+  templateCacheNMax: 20
+  templateCacheTtlMaxMs: 30000
+  namespace: "analytics"
+  templatePath: "defaultTemplate.yaml"
+  images: {
+    beaker: {
+      image: "labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.8.0-214-gdd60aa28-dirty",
+      port: 8801,
+      prefix: "/beaker",
+      homePath: "/home/beaker"
+    },
+    jupyter: {
+      image: "labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook-jupyter-libatoms-tutorial:v0.4",
+      port: 8888,
+      prefix: "/jupyter",
+      homePath: "/home/beaker"
+    },
+    creedo: {
+      image: "labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/creedo:v0.4.2-2017-09-29",
+      port: 8080,
+      prefix: "/Creedo",
+      homePath: "/home/creedo"
+    },
+    remotevis: {
+      image: "labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook-jupyter-libatoms-tutorial",
+      port: 8888,
+      prefix: "/jupyter",
+      homePath: "/home/beaker"
+      templatePath: "remoteVisTemplate.yaml"
+    }
+  }
+}
+userInfo: {
+  demoToWatch: "/nomad/nomadlab/demos"
+  basePathToWatch: "/nomad/nomadlab/beaker-notebooks/user-data",
+  privateDir: "/nomad/nomadlab/beaker-notebooks/user-data/private",
+  sharedDir: "/nomad/nomadlab/beaker-notebooks/user-data/shared",
+  privateDirInContainer: "/data/private",
+  sharedDirInContainer: "/data/shared",
+  mySharedDirInContainer: "/data/my-shared"
+}

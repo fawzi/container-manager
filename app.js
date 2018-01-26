@@ -1,9 +1,6 @@
 var env = process.env.NODE_ENV || 'development';
-const config = require('./config/config')[env];
-console.log('Using configuration', config);
-const mongoose = require('mongoose');
-mongoose.connect(config.mongoDb.url);
-const models = require('./app/models')(mongoose, config);
+const config = require('config') // require('./config/config')[env];
+console.log('Using configuration', config.util.getEnv('NODE_ENV'), config);
 
 function main() {
   var iarg = 2
@@ -36,6 +33,15 @@ function main() {
     }
   }
   config.k8component['imageType'] = imageType
+  const watcherRequired = cmds.includes("watcher")
+  const webserverRequired = cmds.includes("webserver")
+  const apiserverRequired = cmds.includes("apiserver")
+  var models
+  if (watcherRequired || webserverRequired || apiserverRequired) {
+    const mongoose = require('mongoose');
+    mongoose.connect(config.mongoDb.url);
+    models = require('./app/models')(mongoose, config);
+  }
   if (cmds.includes("watcher")) {
     const fileWatcher = require('./app/filesWatcher')(env, config, models);
   }
