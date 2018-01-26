@@ -1,0 +1,109 @@
+---
+{
+    "apiVersion": "v1",
+    "kind": "ReplicationController",
+    "metadata": {
+      "name": imageType + "-rc-" + user,
+      "labels": {
+        "user": user,
+        "app": imageType
+      },
+    },
+    "spec": {
+      "replicas": 1,
+      "selector":{
+        "user": user,
+        "app": imageType
+        },
+      "template": {
+        "metadata": {
+          "labels": {
+            "user":user,
+            "app": imageType
+          }
+        },
+        "spec": {
+          "containers": [
+            {
+              "image": imageInfo.image,
+              "name": imageType,
+              "ports": [
+                {
+                  "containerPort": imageInfo.port,
+                  "name": "main-port",
+                  "protocol": "TCP"
+                }
+              ],
+              "imagePullPolicy": "IfNotPresent",
+              "volumeMounts": [
+                {
+                  "mountPath": "/raw-data",
+                  "name": "raw-data-volume",
+                  "readOnly": true
+                },
+                {
+                  "mountPath": "/parsed",
+                  "name": "parsed-data-volume",
+                  "readOnly": true
+                },
+                {
+                  "mountPath": "/normalized",
+                  "name": "normalized-data-volume",
+                  "readOnly": true
+                },
+                {
+                  "mountPath": imageInfo.homePath+"/notebooks",
+                  "name": "notebooks-data-volume",
+                  "readOnly": true
+                },
+                {
+                  "mountPath": config.userInfo.privateDirInContainer+ "/" + user,
+                  "name": "private-data-volume"
+                },
+                {
+                  "mountPath": config.userInfo.sharedDirInContainer,
+                  "name": "shared-data-volume",
+                  "readOnly": true
+                },
+                {
+                  "mountPath": config.userInfo.sharedDirInContainer + "/" + user,
+                  "name": "my-shared-data-volume"
+                }
+              ]
+            }
+          ]
+          ,
+          volumes: [
+            {
+              "name": "parsed-data-volume",
+              "hostPath": { "path": "/nomad/nomadlab/parsed" }
+            },
+            {
+              "name": "raw-data-volume",
+              "hostPath": { "path": "/nomad/nomadlab/raw-data"}
+            },
+            {
+              "name": "normalized-data-volume",
+              "hostPath": { "path": "/nomad/nomadlab/normalized" }
+            },
+            {
+              "name": "notebooks-data-volume",
+              "hostPath": { "path": "/nomad/nomadlab/beaker-notebooks/notebooks" }
+            },
+            {
+              "name": "private-data-volume",
+              "hostPath": { "path": config.userInfo.privateDir + '/' + user }
+            },
+            {
+              "name": "shared-data-volume",
+              "hostPath": { "path": config.userInfo.sharedDir }
+            },
+            {
+              "name": "my-shared-data-volume",
+              "hostPath": { "path": config.userInfo.sharedDir + '/' + user }
+            }
+          ]
+        }
+      }
+    }
+  };

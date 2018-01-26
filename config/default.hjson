@@ -10,7 +10,7 @@ app: {
   frontendAddr: "http://127.0.0.1:4200"
   baseUri: "http://127.0.0.1"
   catchErrors: false
-  templatesDir: "{{baseDir}}/templates"
+  templatesDir: "{{baseDir}}/kubeTemplates"
   baseReplacements: {}
 }
 mongoDb: {

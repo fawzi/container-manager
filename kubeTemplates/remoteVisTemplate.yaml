@@ -1,0 +1,74 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: remotevis-{{user}}-{{short_session}}
+spec:
+  containers:
+  - image: labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/nomadvis:v1.0.2
+    name: nomadvis
+    command: ["bash"]
+    args: ["/software/scripts/startup.sh"]
+    env:
+    - name: USERNAME
+      value: {{user}}
+    - name: SESSIONID
+      value: {{short_session}}
+    - name: DATAPID
+      value: "PID of the dataset"
+    volumeMounts:
+    - mountPath: /data/test
+      name: data-test
+      readOnly: true
+    - mountPath: /data/shared
+      name: data-shared
+      readOnly: false
+    - mountPath: /data/private
+      name: data-private
+      readOnly: false
+    - mountPath: /etc/nginx/ssl
+      name: nginx-volume
+      readOnly: true
+    - mountPath: /hostlib
+      name: lib64-volume
+      readOnly: true
+    - mountPath: /tmp/.X11-unix/X0
+      name: xserver-volume
+      readOnly: false
+    - mountPath: /dev/nvidia0
+      name: dev-nvidia0
+      readOnly: true
+    - mountPath: /dev/nvidiactl
+      name: dev-nvidiactl
+      readOnly: true
+    securityContext:
+      privileged: true
+    ports:
+    - containerPort: 8809
+      name: vnc-port
+      protocol: TCP
+    imagePullPolicy: IfNotPresent
+  volumes:
+  - name: data-test
+    hostPath:
+      path: /nomad/mcompo/CO2-CaO
+  - name: data-shared
+    hostPath:
+      path: /nomad/nomadlab/user-data/shared/{{user}}
+  - name: data-private
+    hostPath:
+      path: /nomad/nomadlab/user-data/private/{{user}}
+  - name: nginx-volume
+    hostPath:
+      path: /etc/nginx/ssl
+  - name: lib64-volume
+    hostPath:
+      path: /usr/lib64
+  - name: xserver-volume
+    hostPath:
+      path: /tmp/.X11-unix/X0
+  - name: dev-nvidia0
+    hostPath:
+      path: /dev/nvidia0
+  - name: dev-nvidiactl
+    hostPath:
+      path: /dev/nvidiactl
