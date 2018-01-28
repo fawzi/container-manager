@@ -82,25 +82,31 @@ module.exports = function (config) {
     evalTemplate("namespace.yaml", { namespace: name }, next)
   }
 
+  /// Returns the template corrsponding 
   function templateForImageType(imageType, user, extraRepl, next) {
     var repl = {}
-    const toSkip = ['images']
-    for (k <- cconfig) {
-      if (toSkip.indexOf(k) == -1) {
-        rep[k] = config[k]
-      }
+    var keysToProtect = new Set()
+    var toSkip
+    function addRepl(dict) {
+      if (dict.keysToSkip)
+        toSkip = new Set([...keysToProtect, ...dict.keysToSkip])
+      else
+        toSkip = new Set(keysToProtect)
+      for (k in cconfig)
+        if (!toSkip.has(k))
+          rep[k] = config[k]
+      if (dict.keysToProtect)
+        for (k in dict.keysToProtect)
+          keysToProtect.add(k)
     }
-    const imgSettings = cconfig[imageType]
-    for (k <- imgSettings)
-      repl[k] = imgSettings[k]
-  
+    addRepl(cconfig)
+    addRepl(cconfig[imageType])
     const userRepl = userSettings.getSettings(user, 'image:' + imageType)
-    for (k <- userRepl)
-      repl[k] = userRepl[k]
-
+    addRepl(userRepl)
+    // extraRepl overrides even protected values
     for (k <- extraRepl)
       repl[k] = userRepl[k]
-    
+    // and the "real" user overrided everything
     repl['user'] = user
 
     evalTemplate(repl['templatePath'], repl, next)

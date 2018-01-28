@@ -46,6 +46,8 @@ k8component: {
   templateCacheTtlMaxMs: 30000
   namespace: "analytics"
   templatePath: "defaultTemplate.yaml"
+  keysToProtect: ["keysToProtect", "keysToSkip"]
+  keysToSkip: ["templateCacheTtlMaxMs", "templateCacheNMax", "keysToSkip", "keysToProtect", "images"]
   images: {
     beaker: {
       image: "labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.8.0-214-gdd60aa28-dirty",
