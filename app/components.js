@@ -84,6 +84,10 @@ var createRcControllerConfig = function(user) {
                   "protocol": "TCP"
                 }
               ],
+              "env": [
+                {"name": "NOMAD_USER", "value": user },
+                {"name": "NOMAD_BASE_URI", "value": config.app.baseUri }
+              ],
               "imagePullPolicy": "IfNotPresent",
               "volumeMounts": [
                 {

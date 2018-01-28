@@ -2,7 +2,8 @@ const stringify = require('json-stringify-safe');
 const http = require('http');
 const fs = require('fs');
 module.exports = function (config, k8, k8component) {
-const reloadMsg = `<html><head><title>Starting up!</title><meta http-equiv="refresh" content="${config.app.pageReloadTime}" ></head><body><h3>Please wait while we start a container for you!</h3></body></html>`;
+const reloadMsg = `<html><head><title>Starting up!</title><meta http-equiv="refresh" content="${config.app.pageReloadTime}" ></head><body><h3>Please wait while we start a container for you!</h3>
+<p>You might need to refresh manually (F5)...</body></html>`;
 var ProxyRouter = function(options) {
   if (!options.backend) {
     throw "ProxyRouter backend required. Please provide options.backend parameter!";
