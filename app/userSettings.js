@@ -1,14 +1,17 @@
 //const config = require('config')
 //const redis = require('redis')
 
-function userSettings(app, user, key) {
+/// Returns the settings key of the given app and user
+function getSetting(app, user, key) {
   return {}
 }
 
-module.exports = {
-  getOtherSetting: userSettings
+/// Returns the settings of this app for the given user and key
+function getAppSetting(user, key) {
+  getSetting('container-manager', user, key)
+}
 
-  getSetting: function(user, key) {
-    userSettings('container-manager', user, key)
-  }
+module.exports = {
+  getSetting: getSetting,
+  getAppSetting: getAppSetting
 }

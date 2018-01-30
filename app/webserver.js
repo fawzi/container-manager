@@ -109,12 +109,9 @@ module.exports = function(env,config, models, cmds) {
 
   if (cmds.includes('webserver')) {
     console.log('starting webserver')
-    const k8 = require('./kubernetes')(config);
-    const k8component = require('./components')(config);
-    const ProxyRouter = require('./ProxyRouter')(config,k8, k8component)
+    const ProxyRouter = require('./ProxyRouter')
     const proxyRouter = new ProxyRouter({
-      backend: client,
-      cache_ttl: 10
+      backend: client
     });
     //Agent is need to keep the connection: keep-alive header. But we not using it until really needed.
     //const agent = new http.Agent({ maxSockets: Number.MAX_VALUE });

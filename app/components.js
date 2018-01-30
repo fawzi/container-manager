@@ -4,7 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const baseDir = path.resolve(__dirname, '..')
 const cconfig = config.k8component
-const userSettings = require('userSettings')
+const userSettings = require('./userSettings')
+const crypto = require('crypto');
 
 var baseRepl = {
   baseDir: baseDir
@@ -30,15 +31,14 @@ function loadTemplateInternal(templatePath, next) {
 }
 
 const templateCache = require('../safe-memory-cache/map.js')({
-  limit = cconfig.templateCacheNMax,
-  opts.maxTTL = cconfig.templateCacheTtlMaxMs,
-  refreshF = function(key, value) {
+  limit: cconfig.templateCacheNMax,
+  maxTTL: cconfig.templateCacheTtlMaxMs,
+  refreshF: function(key, value, cache) {
     loadTemplateInternal(key, function(err, t) {
       if (err) {
-        console.log(`refresh of template ${key} failed with ${JSON.stringify(err)}, keeping old value`)
-        this.set(key, value)
+        console.log(`refresh of template ${key} failed with ${JSON.stringify(err)}`)
       } else {
-        this.set(key,t)
+        cache.set(key,t)
       }
     })
   }
@@ -54,7 +54,7 @@ function loadTemplate(templatePath, next) {
         templateCache.set(templatePath, null)
         next(err, null)
       } else {
-        this.set(templatePath, t)
+        templateCache.set(templatePath, t)
         next(null, t)
       }
     })
@@ -81,38 +81,92 @@ function namespaceTemplate(name, next) {
   evalTemplate("namespace.yaml", { namespace: name }, next)
 }
 
-/// Returns the template corrsponding 
-function templateForImageType(imageType, user, extraRepl, next) {
+/// returns a short session ID from a long session id
+function shortSession(sessionID) {
+  const hash = crypto.createHash('sha512');
+  hash.update(req.sessionID)
+  return hash.digest('base64').slice(0,14).replace('+','-').replace('/','_')
+}
+
+/// returns the name of the pod for the give user/session
+function podNameForImageType(imageType, user, shortSession) {
+  var session = cconfig.images[imageType].containerPerSession
+  if (session !== true && session !== false)
+    session = cconfig.containerPerSession
+  if (session)
+    return `${imageType}-${user}-${shortSession}`
+  else
+    return`${imageType}-${user}`
+}
+
+/// returns the keys (user,...) for the given pod name
+function infoForPodName(podName) {
+  const imageType = podName.slice(0,podName.indexOf('-'))
+  var session = cconfig.images[imageType].containerPerSession
+  if (session !== true && session !== false)
+    session = cconfig.containerPerSession
+  if (session)
+    return {
+      imageType: imageType,
+      user: podName.slice(imageType.length + 1, podName.length - 15),
+      shortSession: podName.slice(podName.length - 14)
+    }
+  else
+    return {
+      imageType: imageType,
+      user: podName.slice(imageType.length + 1)
+    }
+}
+
+/// gives the replacements for the image type and user
+function replacementsForImageType(imageType, user, shortSession, extraRepl, next) {
   var repl = {}
   var keysToProtect = new Set()
   var toSkip
   function addRepl(dict) {
-    if (dict.keysToSkip)
+    if (dict && dict.keysToSkip)
       toSkip = new Set([...keysToProtect, ...dict.keysToSkip])
     else
       toSkip = new Set(keysToProtect)
-    for (k in cconfig)
+    for (k in dict)
       if (!toSkip.has(k))
-        rep[k] = config[k]
-    if (dict.keysToProtect)
+        repl[k] = dict[k]
+    if (dict && dict.keysToProtect)
       for (k in dict.keysToProtect)
         keysToProtect.add(k)
   }
   addRepl(cconfig)
-  addRepl(cconfig[imageType])
-  const userRepl = userSettings.getSettings(user, 'image:' + imageType)
+  addRepl(cconfig.images[imageType])
+  const userRepl = userSettings.getAppSetting(user, 'image:' + imageType)
   addRepl(userRepl)
   // extraRepl overrides even protected values
-  for (k <- extraRepl)
-    repl[k] = userRepl[k]
-  // and the "real" user overrided everything
+  if (extraRepl)
+    for (k in extraRepl)
+      repl[k] = extraRepl[k]
+  // "real" user imageType and podName overrided everything
   repl['user'] = user
+  repl['imageType'] = imageType
+  repl['shortSession'] = shortSession
+  repl['podName'] = podNameForImageType(imageType, user, shortSession)
 
-  evalTemplate(repl['templatePath'], repl, next)
+  next(null, repl)
+}
+
+function templateForImageType(imageType, user, shortSession, extraRepl, next) {
+  replacementsForImageType(imageType, user, shortSession, extraRepl, function(err, repl) {
+    if (err)
+      next(err, null, null)
+    else
+      evalTemplate(repl['templatePath'], repl, next)
+  })
 }
 
 module.exports = {
   evalTemplate: evalTemplate,
   namespaceTemplate: namespaceTemplate,
+  shortSession: shortSession,
+  replacementsForImageType: replacementsForImageType,
+  podNameForImageType: podNameForImageType,
+  infoForPodName: infoForPodName,
   templateForImageType: templateForImageType
 }
