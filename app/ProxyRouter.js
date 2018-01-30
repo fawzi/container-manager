@@ -3,7 +3,7 @@ const http = require('http');
 const fs = require('fs');
 const components = require('./components');
 const yaml = require('js-yaml')
-const k8 = require('./kubernetes')(config);
+const k8 = require('./kubernetes');
 
 const reloadMsg = `<html><head><title>Starting up!</title><meta http-equiv="refresh" content="${config.app.pageReloadTime}" ></head><body><h3>Please wait while we start a container for you!</h3><p>You might need to refresh manually (F5)...</body></html>`;
 

@@ -37,7 +37,7 @@ function main() {
   const webserverRequired = cmds.includes("webserver")
   const apiserverRequired = cmds.includes("apiserver")
   var models
-  if (watcherRequired || webserverRequired || apiserverRequired) {
+  if (watcherRequired || apiserverRequired) {
     const mongoose = require('mongoose');
     mongoose.connect(config.mongoDb.url);
     models = require('./app/models')(mongoose, config);

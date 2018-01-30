@@ -1,4 +1,4 @@
-module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, passport, models, fs, ensureLoggedIn, bodyParser) {
+module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, passport, fs, ensureLoggedIn, bodyParser) {
   function makeid(){
     var text = "";
     var possible = "abcdefghijklmnopqrstuvwxyz0123456789";

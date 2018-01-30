@@ -169,8 +169,8 @@ module.exports = function(env,config, models, cmds) {
           console.error("Proxy error: res.writeHead/res.end error: %s", er.message);
           }*/
     });
-
-    require('../config/routes')(app,redirect, config, proxyServer, proxyRouter, k8, passport, models, fs, ensureLoggedIn, bodyParser);
+    const k8 = require('./kubernetes');
+    require('../config/routes')(app,redirect, config, proxyServer, proxyRouter, k8, passport, fs, ensureLoggedIn, bodyParser);
 
     httpServer.on('upgrade', function (req, socket, head) {
       cookieParser(req, {}, function() {
