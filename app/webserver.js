@@ -41,6 +41,9 @@ module.exports = function(env,config, models, cmds) {
   //app.use(bodyParser.urlencoded({extended: true}));
 
   const client = redis.createClient(config.redis);
+  client.on("error", function (err) {
+    throw err
+  });
   const sessionManager = session(
     {
       store: new RedisStore({client: client}),
@@ -54,7 +57,7 @@ module.exports = function(env,config, models, cmds) {
   app.use(passport.session());
 
   var httpServer;
-  if (env === 'development') {
+  if (!config.app.ssl || !config.app.ssl.key) {
     httpServer = http.createServer(app);
   } else {
     var httpsOptions = {
@@ -64,11 +67,48 @@ module.exports = function(env,config, models, cmds) {
     httpServer = https.createServer(httpsOptions, app);
   }
 
+
+  if (config.passport.strategy === "local") {
+    const flash = require('connect-flash');
+    app.use(flash());
+
+    app.post('/login',
+             passport.authenticate('local', { successRedirect: '/',
+                                              failureRedirect: '/login',
+                                              failureFlash: false })
+            );
+  }
+
   app.get(loginPrefix + '/login',function(req, res, next) {
-    var target = '/'
-    if (req.session && req.query.redirectTo)
-      req.session.returnTo = req.query.redirectTo
-    next()
+    if (config.passport.strategy === "local") {
+      res.send(`
+        <html>
+           <head>
+              <title>Login</title>
+           </head>
+           <body>
+             <h1>Login</h1>
+             <form action="/login" method="post">
+                <div>
+                    <label>Username:</label>
+                    <input type="text" name="username"/>
+                </div>
+                <div>
+                    <label>Password:</label>
+                    <input type="password" name="password"/>
+                </div>
+                <div>
+                    <input type="submit" value="Log In"/>
+                </div>
+             </form>
+           </body>
+         </html>`)
+    } else {
+      var target = '/'
+      if (req.session && req.query.redirectTo)
+        req.session.returnTo = req.query.redirectTo
+      next()
+    }
   }, passport.authenticate(config.passport.strategy,
                            {
                              successReturnToOrRedirect: '/',

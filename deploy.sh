@@ -30,7 +30,7 @@ mongodbRooPassword: "$mongoPass"
 mongodbUsername: "notebookinfo"
 mongodbPassword: "$mongoPass"
 mongodbDatabase: "notebookinfo"
-persistence.enables: fales
+persistence.enables: false
 EOF
 
 echo "## Environment setup, mongo db for notebook & usage information"

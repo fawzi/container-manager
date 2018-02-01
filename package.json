@@ -44,6 +44,7 @@
     "morgan": "1.7.0",
     "nodemon": "1.9.2",
     "passport": "0.3.2",
+    "passport-local": "^1.0.0",
     "passport-saml": "https://gitlab.rzg.mpg.de/nomad-lab/passport-saml/repository/archive.tar.gz?ref=master",
     "redis": "^2.6.3"
   },

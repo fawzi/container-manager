@@ -105,3 +105,12 @@ env/
 
 kubeGen/
 app2.js
+
+# deploy generated files
+container-manager-deploy.yaml
+container-manager-namespace.yaml
+container-manager-service.yaml
+notebook-mongo-helm-values.yaml
+session-redis-helm-values.yaml
+settings-redis-helm-values.yaml
+settings-volume.yaml
