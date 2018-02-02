@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: remotevis-{{user}}-{{short_session}}
+  name: remotevis-{{user}}-{{shortSession}}
 spec:
   containers:
   - image: labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/nomadvis:v1.0.2
@@ -12,7 +12,7 @@ spec:
     - name: USERNAME
       value: {{user}}
     - name: SESSIONID
-      value: {{short_session}}
+      value: {{shortSession}}
     - name: DATAPID
       value: "PID of the dataset"
     volumeMounts:

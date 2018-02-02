@@ -1,7 +1,7 @@
 FROM node:carbon
 
 # Create app directory
-WORKDIR /nomad-stats
+WORKDIR /usr/src/app
 
 # Install app dependencies
 COPY package*.json ./
@@ -11,5 +11,5 @@ RUN npm install
 # Bundle app source
 COPY . .
 
-EXPOSE 80
-CMD [ "npm", "start" ]
+EXPOSE 3003
+CMD [ "npm", "start", "webserver"]

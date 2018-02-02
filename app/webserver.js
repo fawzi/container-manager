@@ -40,7 +40,7 @@ module.exports = function(env,config, models, cmds) {
   //app.use(bodyParser.json());
   //app.use(bodyParser.urlencoded({extended: true}));
 
-  const client = redis.createClient(config.redis);
+  const client = redis.createClient(config.session_redis);
   client.on("error", function (err) {
     throw err
   });

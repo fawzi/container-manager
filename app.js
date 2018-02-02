@@ -6,8 +6,10 @@ function main() {
   var iarg = 2
   var args = process.argv
   var cmds = []
-  var imageType = "beaker"
-  const usage = `node ${args[1]} [-h|--help] [--image-type [beaker|jupyter]] [webserver|watcher]`
+  var imageType = config.k8component.imageType
+  const usage = `node ${args[1]} [-h|--help] [--image-type [beaker|jupyter|creedo|remotevis]] [webserver|watcher]
+
+  default imageType for current config = ${imageType}`
     console.log(`Started with arguments ${JSON.stringify(args)}`)
   while (iarg < args.length) {
     var arg = args[iarg]
