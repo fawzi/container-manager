@@ -43,7 +43,7 @@ module.exports = {
       namespace: 'default',
       images: {
 	  beaker: {
-	      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.8.0-305-gaf64b6eb-dirty-patch1',
+	      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.8.0-305-gaf64b6eb-dirty-patch2',
 	      port: 8801,
 	      prefix: '/beaker',
 	      homePath: '/home/beaker'
@@ -118,7 +118,7 @@ module.exports = {
       namespace: 'default',
       images: {
 	  beaker: {
-	      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.8.0-305-gaf64b6eb-dirty-patch1',
+	      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.8.0-305-gaf64b6eb-dirty-patch2',
 	      port: 8801,
 	      prefix: '/beaker',
 	      homePath: '/home/beaker'
@@ -199,7 +199,7 @@ module.exports = {
       namespace: 'default',
       images: {
 	  beaker: {
-	      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.8.0-305-gaf64b6eb-dirty-patch1',
+	      image: 'labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.8.0-305-gaf64b6eb-dirty-patch2',
 	      port: 8801,
 	      prefix: '/beaker',
 	      homePath: '/home/beaker'
