@@ -179,11 +179,11 @@ module.exports = {
       host: 'analytics-toolkit.nomad-coe.eu'
     },
     k8Api: {
-      url: 'https://130.183.207.112:6443',
-      node: 'nomad-flink-03.esc.rzg.mpg.de',
+      url: 'https://130.183.207.101:6443',
       ca: '/usr/src/app/certs/ca.cert',
       cert: '/usr/src/app/certs/client.cert',
-      key: '/usr/src/app/certs/client.key'
+      key: '/usr/src/app/certs/client.key',
+      node: 'labdev3-nomad.esc.rzg.mpg.de'
     },
     passport: {
       strategy: 'saml',
