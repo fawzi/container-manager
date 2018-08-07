@@ -1,5 +1,5 @@
 'use strict';
-module.exports = function(env,config, models, cmds) {
+module.exports = function(config, models, cmds) {
   const express = require('express');
 
   const http = require('http');
@@ -28,6 +28,7 @@ module.exports = function(env,config, models, cmds) {
 
   var app = express();
 
+  const env = process.env["NODE_ENV"] || 'development'
   if (env === 'development') {
     // only use in development
     app.use(errorHandler())

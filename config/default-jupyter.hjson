@@ -1,0 +1,11 @@
+k8component: {
+  image: {
+    name: jupyter
+    subtype: default1
+    keysToProtect: ["containerPerSession"]
+    image: "labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook-jupyter-libatoms-tutorial:v0.4",
+    port: 8888,
+    prefix: "/jupyter",
+    homePath: "/home/beaker"
+  }
+}

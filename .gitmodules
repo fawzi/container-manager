@@ -1,0 +1,3 @@
+[submodule "safe-memory-cache"]
+        path = safe-memory-cache
+        url = https://github.com/fawzi/safe-memory-cache.git

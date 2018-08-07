@@ -6,15 +6,25 @@ const baseDir = path.resolve(__dirname, '..')
 const cconfig = config.k8component
 const userSettings = require('./userSettings')
 const crypto = require('crypto');
+const url = require('url');
 
 var baseRepl = {
-  baseDir: baseDir
+  baseDir: baseDir,
+  baseUri: config.app.baseUri,
+  baseUriPath: url.parse(config.app.baseUri).path
 };
 for (k in config.app.baseReplacements)
   repl[k] = baseRepl[k];
-const templatesDir = handlebars.compile(config.app.templatesDir)(baseRepl)
+
+// Create a template from the given string
+function templatize(str) {
+  return handlebars.compile(str)
+}
+
+const templatesDir = templatize(config.app.templatesDir)(baseRepl)
 baseRepl['templatesDir'] = templatesDir
 baseRepl['namespace'] = cconfig.namespace
+baseRepl['commands'] = templatize(cconfig.commands.path)(baseRepl)
 
 // Given a path loads it and compiles a template for it, use loadTemplate that has caching
 function loadTemplateInternal(templatePath, next) {
@@ -24,7 +34,7 @@ function loadTemplateInternal(templatePath, next) {
       err.message = err.message + ` loading ${templateRealPath}`
       next(err,null)
     } else {
-      const template = handlebars.compile(data)
+      const template = templatize(data)
       next(null, template)
     }
   })
@@ -63,11 +73,12 @@ function loadTemplate(templatePath, next) {
   }
 }
 
-// evaluates a template
+// evaluates a template, here only the most basic replacements are given, you normally need to pass in extraRepl.
+// calls next with the resolved template plus all replacements defined
 function evalTemplate(templatePath, extraRepl, next) {
   loadTemplate(templatePath, function (err, template) {
     if (err) {
-      next(err, null)
+      next(err, null, undefined)
     } else {
       const repl = Object.assign({}, extraRepl, baseRepl)
       const res = template(repl)
@@ -85,41 +96,36 @@ function namespaceTemplate(name, next) {
 function shortSession(sessionID) {
   const hash = crypto.createHash('sha512');
   hash.update(req.sessionID)
-  return hash.digest('base64').slice(0,14).replace('+','-').replace('/','_')
+  // lowercase base32 would be better...
+  return hash.digest('hex').slice(0,20).toLowerCase()
 }
 
-/// returns the name of the pod for the give user/session
-function podNameForImageType(imageType, user, shortSession) {
-  var session = cconfig.images[imageType].containerPerSession
-  if (session !== true && session !== false)
-    session = cconfig.containerPerSession
-  if (session)
-    return `${imageType}-${user}-${shortSession}`
-  else
-    return`${imageType}-${user}`
+/// returns the name of the pod for the given replacements
+function podNameForRepl(repl) {
+  const imageType = cconfig.image.name
+  const itypeRe = /^[a-z0-9]+$/
+
+  if (!itypeRe.test(imageType))
+    throw `imageType ${imageType} is invalid (not just lower case letters an numbers)`
+  if (!itypeRe.test(repl.imageSubtype))
+    throw `imageSubtype ${repl.imageSubtype} is invalid (not just lower case letters an numbers)`
+  return `${imageType}-${repl.user}-${repl.imageSubtype}`
 }
 
 /// returns the keys (user,...) for the given pod name
 function infoForPodName(podName) {
   const imageType = podName.slice(0,podName.indexOf('-'))
-  var session = cconfig.images[imageType].containerPerSession
-  if (session !== true && session !== false)
-    session = cconfig.containerPerSession
-  if (session)
-    return {
-      imageType: imageType,
-      user: podName.slice(imageType.length + 1, podName.length - 15),
-      shortSession: podName.slice(podName.length - 14)
-    }
-  else
-    return {
-      imageType: imageType,
-      user: podName.slice(imageType.length + 1)
-    }
+  const imageSubtype = podName.slice(podName.lastIndexOf('-'), podName.length)
+  const user = podName.slice(imageType.length + 1, podName.length - imageSubtype.length - 1)
+  return {
+    imageType: imageType,
+    user: user,
+    imageSubtype: imageSubtype
+  }
 }
 
-/// gives the replacements for the image type and user
-function replacementsForImageType(imageType, user, shortSession, extraRepl, next) {
+/// gives the replacements for the user
+function replacementsForUser(user, extraRepl, next) {
   var repl = {}
   var keysToProtect = new Set()
   var toSkip
@@ -136,7 +142,8 @@ function replacementsForImageType(imageType, user, shortSession, extraRepl, next
         keysToProtect.add(k)
   }
   addRepl(cconfig)
-  addRepl(cconfig.images[imageType])
+  addRepl(cconfig.image)
+  let imageType = cconfig.image.imageType
   const userRepl = userSettings.getAppSetting(user, 'image:' + imageType)
   addRepl(userRepl)
   // extraRepl overrides even protected values
@@ -146,27 +153,52 @@ function replacementsForImageType(imageType, user, shortSession, extraRepl, next
   // "real" user imageType and podName overrided everything
   repl['user'] = user
   repl['imageType'] = imageType
-  repl['shortSession'] = shortSession
-  repl['podName'] = podNameForImageType(imageType, user, shortSession)
+  repl['podName'] = podNameForRepl(repl)
 
   next(null, repl)
 }
 
-function templateForImageType(imageType, user, shortSession, extraRepl, next) {
-  replacementsForImageType(imageType, user, shortSession, extraRepl, function(err, repl) {
-    if (err)
-      next(err, null, null)
-    else
-      evalTemplate(repl['templatePath'], repl, next)
-  })
+// returns the name of the logged in user
+function selfUserName(req) {
+  var selfName;
+  try {
+    selfName = req.user.id;
+  } catch(e) {
+    selfName = ''
+  }
+  return selfName
+}
+
+// returns the cached replacements if available, creating them if the entryPoint is not exclusive
+function cachedReplacements(req, next) {
+  let imageType = cconfig.image.imageType
+  var repl = req.session.replacements[imageType]
+  if (repl) {
+    next(null, repl)
+  } else if (!cconfig.entryPoint.exclusiveStartPoint) {
+    replacementsForUser(selfUserName(req), {}, function(err, newRepl) {
+      req.session.replacements[imageType] = newRepl
+      next(null, newRepl)
+    })
+  } else {
+    next({ message: `no replacements defined, you need to visit first the entry point ${cconf.entryPoint.path}` }, undefined)
+  }
+}
+
+function templateForImage(repl, next) {
+  evalTemplate(repl['templatePath'], repl, next)
 }
 
 module.exports = {
+  baseRepl: baseRepl,
+  templatize: templatize,
   evalTemplate: evalTemplate,
   namespaceTemplate: namespaceTemplate,
   shortSession: shortSession,
-  replacementsForImageType: replacementsForImageType,
-  podNameForImageType: podNameForImageType,
+  replacementsForUser: replacementsForUser,
+  selfUserName: selfUserName,
+  cachedReplacements: cachedReplacements,
+  podNameForRepl: podNameForRepl,
   infoForPodName: infoForPodName,
-  templateForImageType: templateForImageType
+  templateForImage: templateForImage
 }

@@ -48,39 +48,26 @@ k8component: {
   namespace: "analytics"
   templatePath: "defaultTemplate.yaml"
   keysToProtect: ["keysToProtect", "keysToSkip"]
-  keysToSkip: ["templateCacheTtlMaxMs", "templateCacheNMax", "keysToSkip", "keysToProtect", "images"]
+  keysToSkip: ["templateCacheTtlMaxMs", "templateCacheNMax", "keysToSkip", "keysToProtect", "images", "entryPoint", "commands"]
   containerPerSession: false
-  imageType: beaker
-  images: {
-    beaker: {
-      keysToProtect: ["containerPerSession"]
-      image: "labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.8.0-214-gdd60aa28-dirty",
-      port: 8801,
-      prefix: "/beaker",
-      homePath: "/home/beaker"
-    },
-    jupyter: {
-      keysToProtect: ["containerPerSession"]
-      image: "labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook-jupyter-libatoms-tutorial:v0.4",
-      port: 8888,
-      prefix: "/jupyter",
-      homePath: "/home/beaker"
-    },
-    creedo: {
-      keysToProtect: ["containerPerSession"]
-      image: "labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/creedo:v0.4.2-2017-09-29",
-      port: 8080,
-      prefix: "/Creedo",
-      homePath: "/home/creedo"
-    },
-    remotevis: {
-      keysToProtect: ["containerPerSession"]
-      image: "labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook-jupyter-libatoms-tutorial",
-      port: 8809,
-      prefix: "/jupyter",
-      homePath: "/home/beaker"
-      templatePath: "remoteVisTemplate.yaml"
-    }
+  image: {
+    imageType: beaker
+    imageSubtype: default
+    keysToProtect: ["imageType", "containerPerSession"]
+    image: "labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.8.0-214-gdd60aa28-dirty"
+    port: 8801
+    prefix: "/beaker"
+    homePath: "/home/beaker"
+    autoRestart: true
+  }
+  entryPoint: {
+    path: "/notebook-edit/*"
+    uriRe: "/notebook-edit(/.*)"
+    redirectTarget: "{{baseUri}}/beaker/#/open?uri={{escapedPath1}}"
+    exclusiveStartPoint: false
+  }
+  commands: {
+    path: "{{baseUriPath}}/nomad-commands"
   }
 }
 userInfo: {

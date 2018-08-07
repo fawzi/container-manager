@@ -1,5 +1,5 @@
 'use strict';
-module.exports = function(env, config, models){
+module.exports = function(config, models){
   const chokidar = require('chokidar');
   const pathModule = require('path');
   const fs = require('fs');

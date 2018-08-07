@@ -1,0 +1,12 @@
+k8component: {
+  image: {
+    name: remotevis
+    subtype: default1
+    keysToProtect: ["containerPerSession"]
+    image: "labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook-jupyter-libatoms-tutorial",
+    port: 8809,
+    prefix: "/jupyter",
+    homePath: "/home/beaker"
+    templatePath: "remoteVisTemplate.yaml"
+  }
+}

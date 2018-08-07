@@ -1,16 +1,13 @@
-var env = process.env.NODE_ENV || 'development';
-const config = require('config') // require('./config/config')[env];
-console.log('Using configuration', config.util.getEnv('NODE_ENV'), config);
 
 function main() {
+  var env = process.env.NODE_ENV || 'development';
   var iarg = 2
   var args = process.argv
   var cmds = []
-  var imageType = config.k8component.imageType
   const usage = `node ${args[1]} [-h|--help] [--image-type [beaker|jupyter|creedo|remotevis]] [webserver|watcher]
-
-  default imageType for current config = ${imageType}`
-    console.log(`Started with arguments ${JSON.stringify(args)}`)
+  `
+  console.log(`Started with arguments ${JSON.stringify(args)}`)
+  var imageType = undefined
   while (iarg < args.length) {
     var arg = args[iarg]
     iarg += 1
@@ -31,10 +28,18 @@ function main() {
     } else if (arg == "watcher") {
       cmds.push("watcher")
     } else {
-      throw new Error(`unknown command line argument '${arg}.\n${usage}'`)
+      throw new Error(`unknown command line argument '${arg}'.\n${usage}`)
     }
   }
-  config.k8component['imageType'] = imageType
+  if (imageType)
+    process.env["NODE_APP_INSTANCE"] = imageType;
+  const config = require('config')
+  console.log('Using configuration', config.util.getEnv('NODE_ENV'), 'for instance',process.env["NODE_APP_INSTANCE"], JSON.stringify(config, null, 2));  
+  if (config.app.catchErrors) {
+    process.on('uncaughtException', (err) => {
+      console.log("#ERROR# UncaughtException: " + err)
+    })
+  }
   const watcherRequired = cmds.includes("watcher")
   const webserverRequired = cmds.includes("webserver")
   const apiserverRequired = cmds.includes("apiserver")
@@ -45,20 +50,14 @@ function main() {
     models = require('./app/models')(mongoose, config);
   }
   if (cmds.includes("watcher")) {
-    const fileWatcher = require('./app/filesWatcher')(env, config, models);
+    const fileWatcher = require('./app/filesWatcher')(config, models);
   }
   if (cmds.includes("webserver") || cmds.includes("apiserver")) {
-    const webServer = require('./app/webserver')(env, config, models, cmds);
+    const webServer = require('./app/webserver')(config, models, cmds);
   }
   if (cmds.length == 0) {
     console.log(`missin command:\n${usage}`)
   }
-}
-
-if (config.app.catchErrors) {
-  process.on('uncaughtException', (err) => {
-    console.log("#ERROR# UncaughtException: " + err)
-  })
 }
 
 main();

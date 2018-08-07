@@ -1,12 +1,6 @@
 module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, passport, fs, ensureLoggedIn, bodyParser) {
-  function makeid(){
-    var text = "";
-    var possible = "abcdefghijklmnopqrstuvwxyz0123456789";
-    for( var i=0; i < 5; i++ )
-      text += possible.charAt(Math.floor(Math.random() * possible.length));
-    return text;
-  }
-  
+  const components = require('../app/components')
+
   function setFrontendHeader() {
     return function(req, res, next) {
       res.setHeader('Access-Control-Allow-Origin', config.app.frontendAddr);
@@ -21,23 +15,56 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
       res.setHeader('content-type', 'application/vnd.api+json');
       next();
     }
-  }
-  
-  // returns the name of the logget in user
-  function selfUserName(req) {
-    var selfName;
-    try {
-      selfName = req.user.id;
-    } catch(e) {
-      selfName = ''
-    }
-    return selfName
-  }
-
-
+  }      
+    
   app.get('/nmdalive', function(req, res){
     res.send("<div>Hello2!!</div>");
   });
+
+  let cconf = config.k8component
+
+  app.get(cconf.entryPoint.path, ensureLoggedIn('/login'), function(req, res){
+    extraArgs = object.create(req.query)
+    extraArgs.path = req.url
+    if (cconf.entryPoint.pathReStr) {
+      let re = new RegExp(cconf.entryPoint.pathReStr)
+      var iRe = 1
+      while (undefined !== re[iRe]) {
+        let iReStr = iRe.toString()
+        let pVal = re[iRe]
+        extraArgs["path" + iReStr] = pVal
+        extraArgs["escapedPath" + iReStr] = pVal.replace("/","%2F")
+      }
+    }
+    let user = components.selfUserName(req)
+    components.replacementsForUser(user, extraArgs, function(err, repl) {
+      if (!err) {
+        req.session.replacements[cconf.image.imageType] = repl
+        const podName = components.podNameForRepl(repl)
+        proxyRouter.getOrCreatePod(podName, repl, true, function (err, podInfo) {
+          if (err) {
+        console.log(`error in entry point ${JSON.stringify(conf.k8component.entryPoint)} creating the pod: ${JSON.stringify(err)}`)
+          }            
+          let target = components.templatize(cconf.entryPoint.redirectTarget)(repl)
+          res.redirect(302, target);
+        })
+      } else {
+        console.log(`error in entry point ${JSON.stringify(conf.k8component.entryPoint)} getting the replacements: ${JSON.stringify(err)}`)
+      }
+    })
+  });
+
+  const commandsBase = components.templatize(cconf.commands.path)(components.templatize)
+
+  app.post(commandsBase + "/stop", ensureLoggedIn('/login'), function(req, res){
+    
+  })
+
+  app.post(commandsBase + "/stopAll", ensureLoggedIn('/login'), function(req, res){
+  })
+
+  app.post(commandsBase + "/refresh", ensureLoggedIn('/login'), function(req, res){
+  })
 
   app.get('/notebook-edit/*', ensureLoggedIn('/login'), function(req, res){
     const target = config.app.baseUri + '/beaker/#/open?uri=' + req.url.slice(14, req.url.length).replace("/","%2F")

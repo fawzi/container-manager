@@ -1,0 +1,11 @@
+k8component: {
+  image: {
+    imageType: beaker
+    imageSubtype: default1
+    keysToProtect: ["imageType","containerPerSession"]
+    image: "labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.11.5-7-g851b73b-dirty",
+    port: 8801,
+    prefix: "/beaker",
+    homePath: "/home/beaker"
+  }
+}
