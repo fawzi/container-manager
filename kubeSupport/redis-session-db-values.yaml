@@ -1,0 +1,8 @@
+existingSecret: redisSessionDbPass
+rbac:
+  create: true
+metrics:
+  enabled: true
+master:
+  persistence:
+    enabled: false
