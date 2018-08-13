@@ -2,6 +2,7 @@
 
 buildDocker=1
 updateDeploy=1
+imageType=beaker
 while test ${#} -gt 0
 do
   case "$1" in
@@ -12,6 +13,10 @@ do
       --docker-skip)
           buildDocker=""
           updateDeploy=1
+          ;;
+      --image-type)
+          shift
+          imageType=$1
           ;;
       *)
           echo "usage: $0 [--docker-only] [--docker-skip]"
@@ -35,9 +40,6 @@ if [ -n "$buildDocker" ] ; then
     docker push $name
 fi
 
-redisPass=${ANALYTICS_SESSION_DB_PASSWORD:-${NOMAD_PASSWORD:-pippo}}
-mongoPass=${NOTEBOOK_INFO_DB_PASSWORD:-${NOMAD_PASSWORD:-pippo}}
-
 echo "# Initial setup"
 echo "To make kubectl work, for example for the test kubernetes"
 echo "  export KUBECONFIG=/nomad/nomadlab/kubernetes/dev/config"
@@ -50,14 +52,27 @@ metadata:
   name: analytics
 EOF
 
-cat >session-redis-helm-values.yaml <<EOF
-redisPassword: "$redisPass"
-persistence.enabled: false
+cat >redis-session-db-values.yaml <<EOF
+existingSecret: redis-session-db-pwd
+rbac:
+  create: true
+metrics:
+  enabled: true
+master:
+  persistence:
+    enabled: false
+cluster:
+  enabled: false
 EOF
 fi
 
 echo "## Environment setup, redis db for the sessions"
-echo "  helm install --name analytics-session-db -f session-redis-helm-values.yaml stable/redis"
+if [ ! -e redis-session-db-pwd.txt ]; then
+  echo "# creating random password in redis-session-db-pwd.txt"
+  cat /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 28 > redis-session-db-pwd.txt
+fi
+echo "  kubectl create secret generic redis-session-db-pwd --from-file=redis-password=redis-session-db-pwd.txt"
+echo "  helm install --name redis-session-db -f redis-session-db-values.yaml stable/redis"
 
 if [ -n updateDeploy ]; then
 cat >notebook-mongo-helm-values.yaml <<EOF
@@ -70,6 +85,11 @@ EOF
 fi
 
 echo "## Environment setup, mongo db for notebook & usage information"
+if [ ! -e notebook-mongo-db-pwd.txt ]; then
+  echo "# creating random password in notebook-mongo-db-pwd.txt"
+  cat /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 28 > notebook-mongo-db-pwd.txt
+fi
+echo "  kubectl create secret generic notebook-mongo-db-pwd --from-file=password=notebook-mongo-db-pwd.txt"
 echo "  helm install --name notebook-info-db -f notebook-mongo-helm-values.yaml stable mongodb"
 
 if [ -n updateDeploy ]; then
@@ -124,11 +144,11 @@ cat >container-manager-service.yaml <<HERE
 kind: Service
 apiVersion: v1
 metadata:
-  name: nomad-container-manager
-  namespace: analytics
+  name: nomad-container-manager-$imageType
 spec:
   selector:
     app: nomad-container-manager
+    imageType: $imageType
   ports:
   - protocol: TCP
     port: 3003
@@ -145,19 +165,21 @@ cat >container-manager-deploy.yaml <<HERE
 apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
-  name: nomad-container-manager
-  namespace: analytics
+  name: nomad-container-manager-$imageType
   labels:
     app: nomad-container-manager
+    imageType: $imageType
 spec:
   replicas: 1
   selector:
     matchLabels:
       app: nomad-container-manager
+      imageType: $imageType
   template:
     metadata:
       labels:
         app: nomad-container-manager
+        imageType: $imageType
     spec:
       containers:
       - name: nomad-container-manager

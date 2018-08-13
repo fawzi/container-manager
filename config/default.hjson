@@ -15,15 +15,15 @@ app: {
   baseReplacements: {}
 }
 mongoDb: {
-  url: "mongodb://labdev-nomad.esc.rzg.mpg.de/filedatabase"
+  url: "mongodb://notebook-info-db-mongodb/filedatabase"
 }
 session_redis: {
-  port: 6390
-  host: "labdev-nomad.esc.rzg.mpg.de"
+  port: 6379
+  host: "redis-session-db-master"
 }
 usersettings_redis: {
-  port: 6391
-  host: "labdev-nomad.esc.rzg.mpg.de"
+  port: 6379
+  host: "redis-user-db-master"
 }
 k8Api: {
   url: "https://labdev3-nomad.esc.rzg.mpg.de:6443"

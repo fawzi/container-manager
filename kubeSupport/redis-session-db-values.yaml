@@ -1,4 +1,4 @@
-existingSecret: redisSessionDbPass
+existingSecret: redis-session-db-pwd
 rbac:
   create: true
 metrics:
@@ -6,3 +6,5 @@ metrics:
 master:
   persistence:
     enabled: false
+cluster:
+  enabled: false
