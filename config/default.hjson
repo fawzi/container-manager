@@ -53,7 +53,7 @@ k8component: {
     imageType: beaker
     imageSubtype: default
     keysToProtect: ["imageType", "imageReStr"]
-    imageReStr: "^(labdev-nomad\\.esc\\.rzg\\.mpg.de|analytics-toolkit\\.nomad-coe\\.eu)(:[0-9]+)?/([-a-z0-9]*)/([-a-z0-9]*(:[a-z.-])$".
+    imageReStr: "^(labdev-nomad\\.esc\\.rzg\\.mpg.de|analytics-toolkit\\.nomad-coe\\.eu)(:[0-9]+)?/([-a-z0-9]*)/([-a-z0-9]*(:[a-z.-])$"
     image: ""
     port: 8801
     prefix: "/beaker"
