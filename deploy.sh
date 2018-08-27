@@ -43,7 +43,7 @@ done
 
 
 version=$(git describe --tags --always --dirty)
-name="labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/nomad-container-manager-$version"
+name="analytics-toolkit.nomad-coe.eu:5509/nomadlab/nomad-container-manager-$version"
 if [ -n "$buildDocker" ] ; then
     docker build -t $name .
     docker push $name
@@ -56,7 +56,7 @@ echo "  export KUBECONFIG=/nomad/nomadlab/kubernetes/dev/config"
 echo "# Helm install"
 if [ -n updateDeploy ]; then
     cat > helm-tiller-serviceaccount.yaml <<EOF
-apiVarsion: v1
+apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: tiller
@@ -76,7 +76,7 @@ subjects:
     namespace: kube-system
 EOF
 
-    cat > prometheus-alertmanager.yaml <<EOF
+    cat > prometheus-alertmanager-volume.yaml <<EOF
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -87,6 +87,7 @@ spec:
   accessModes:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Recycle
+  storageClassName: manual-alertmanager
   hostPath:
     path: $nomadRoot/servers/$target_hostname/prometheus/alertmanager-volume
     type: Directory
@@ -100,6 +101,7 @@ metadata:
 spec:
   capacity:
     storage: 16Gi
+  storageClassName: manual-prometheus
   accessModes:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Recycle
@@ -109,14 +111,25 @@ spec:
 EOF
 
     cat > prometheus-values.yaml <<EOF
+alertmanager:
+  persistentVolume:
+    storageClass: manual-alertmanager
+  service:
+    type: NodePort
+server:
+  persistentVolume:
+    storageClass: manual-prometheus
+  service:
+    type: NodePort
 EOF
 fi
 
+echo "  kubectl create -f helm-tiller-serviceaccount.yaml"
 echo "  helm init --service-account tiller"
 echo "# Prometheus setup"
 echo "  kubectl create -f prometheus-alertmanager-volume.yaml"
 echo "  kubectl create -f prometheus-server-volume.yaml"
-echo "  helm create -f prometheus-values.yaml stable/prometheus"
+echo "  helm install --name prometheus -f prometheus-values.yaml stable/prometheus"
 
 if [ -n updateDeploy ]; then
     cat >container-manager-namespace.yaml <<EOF
@@ -134,7 +147,7 @@ if [ -n updateDeploy ]; then
         cat /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 28 > session-db-redis-pwd.txt
     fi
 
-    REDISPASS=$(head -1 session-db-redis-pwd.txt)
+    SESSION_REDIS_PASS=$(head -1 session-db-redis-pwd.txt)
 
     cat >session-redis-helm-values.yaml <<EOF
 existingSecret: session-db-redis-pwd
@@ -166,20 +179,28 @@ if [ -n updateDeploy ]; then
         echo "created random password in notebook-db-mongo-pwd.txt"
         cat /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 28 > notebook-db-mongo-pwd.txt
     fi
+    NOTEBOOK_MONGO_PASS=$(head -1 notebook-db-mongo-pwd.txt)
+
 # check how to use secret
     cat >notebook-mongo-helm-values.yaml <<EOF
 mongodbRooPassword: "$(cat notebook-db-mongo-pwd.txt)"
 mongodbUsername: "notebookinfo"
 mongodbPassword: "$(cat notebook-db-mongo-pwd.txt)"
 mongodbDatabase: "notebookinfo"
-persistence.enables: false
+persistence:
+  enabled: false
 EOF
 fi
 
 echo "# password secret"
 echo "  kubectl create secret generic notebook-db-mongo-pwd --from-literal=database=notebookinfo --from-literal=user=notebookinfo --from-file=password=notebook-db-mongo-pwd.txt"
 echo "# actual mongo setup"
-echo "  helm install --name notebook-info-db -f notebook-mongo-helm-values.yaml stable/mongodb"
+
+echo "  if ! [[ -n \"\$(helm ls notebook-info-db | grep -E '^notebook-info-db\s' )\" ]]; then"
+echo "    helm install --name notebook-info-db -f notebook-mongo-helm-values.yaml stable/mongodb"
+echo "  else"
+echo "    helm upgrade notebook-info-db -f notebook-mongo-helm-values.yaml stable/mongodb"
+echo "  fi"
 
 echo "## Environment setup: user settings redis db"
 if [ -n updateDeploy ]; then
@@ -196,6 +217,7 @@ metadata:
   labels:
     type: local
 spec:
+  storageClassName: manual-user-settings
   capacity:
     storage: 16Gi
   accessModes:
@@ -215,6 +237,7 @@ metrics:
 master:
   persistence:
     enabled: true
+    storageClass: manual-user-settings
 cluster:
   enabled: false
 EOF
@@ -287,6 +310,7 @@ spec:
       containers:
       - name: nomad-container-manager
         image: $name
+        imagePullPolicy: IfNotPresent
         command:
         - npm
         - start
