@@ -4,9 +4,15 @@ buildDocker=1
 updateDeploy=1
 imageType=beaker
 target_hostname=${target_hostname:-$HOSTNAME}
+chownRoot=
+tls=
+
 while test ${#} -gt 0
 do
     case "$1" in
+      --tls)
+          tls=--tls
+          ;;
       --docker-only)
           buildDocker=1
           updateDeploy=""
@@ -27,8 +33,12 @@ do
           shift
           nomadRoot=$1
           ;;
+      --chown-root)
+          shift
+          chownRoot=$1
+          ;;
       *)
-          echo "usage: $0 [--nomad-root <pathToNomadRoot>] [--docker-only] [--docker-skip] [--target-hostname hostname]"
+          echo "usage: $0 [--tls] [--nomad-root <pathToNomadRoot>] [--chown-root <pathForPrometheusVolumes>] [--docker-only] [--docker-skip] [--target-hostname hostname]"
           echo
           echo "Env variables: NODE_ENV, target_hostname, nomadRoot"
           echo "Examples:"
@@ -41,7 +51,7 @@ do
   shift
 done
 
-
+chownRoot=${chownRoot:-$nomadRoot/servers/$target_hostname}
 version=$(git describe --tags --always --dirty)
 name="analytics-toolkit.nomad-coe.eu:5509/nomadlab/nomad-container-manager-$version"
 if [ -n "$buildDocker" ] ; then
@@ -75,7 +85,6 @@ subjects:
     name: tiller
     namespace: kube-system
 EOF
-
     cat > prometheus-alertmanager-volume.yaml <<EOF
 apiVersion: v1
 kind: PersistentVolume
@@ -89,8 +98,7 @@ spec:
   persistentVolumeReclaimPolicy: Recycle
   storageClassName: manual-alertmanager
   hostPath:
-    path: $nomadRoot/servers/$target_hostname/prometheus/alertmanager-volume
-    type: Directory
+    path: $chownRoot/prometheus/alertmanager-volume
 EOF
 
     cat > prometheus-server-volume.yaml <<EOF
@@ -106,8 +114,7 @@ spec:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Recycle
   hostPath:
-    path: $nomadRoot/servers/$target_hostname/prometheus/server-volume
-    type: Directory
+    path: $chownRoot/prometheus/server-volume
 EOF
 
     cat > prometheus-values.yaml <<EOF
@@ -125,11 +132,37 @@ EOF
 fi
 
 echo "  kubectl create -f helm-tiller-serviceaccount.yaml"
-echo "  helm init --service-account tiller"
+if [ -n "$tls" ] ; then
+    echo "# secure heml as described in https://docs.helm.sh/using_helm/#using-ssl-between-helm-and-tiller"
+    echo "# create certificates"
+    echo "mkdir helm-certs"
+    echo "cd helm-certs"
+    echo "openssl genrsa -out ./ca.key.pem 4096"
+    echo "openssl req -key ca.key.pem -new -x509 -days 7300 -sha256 -out ca.cert.pem -extensions v3_ca"
+    echo "openssl genrsa -out ./tiller.key.pem 4096"
+    echo "openssl genrsa -out ./helm.key.pem 4096"
+    echo "openssl req -key tiller.key.pem -new -sha256 -out tiller.csr.pem"
+    echo "openssl req -key helm.key.pem -new -sha256 -out helm.csr.pem"
+    echo "openssl x509 -req -CA ca.cert.pem -CAkey ca.key.pem -CAcreateserial -in tiller.csr.pem -out tiller.cert.pem -days 365"
+    echo "openssl x509 -req -CA ca.cert.pem -CAkey ca.key.pem -CAcreateserial -in helm.csr.pem -out helm.cert.pem  -days 365"
+    echo "cp ca.cert.pem \$(helm home)/ca.pem"
+    echo "cp helm.cert.pem \$(helm home)/cert.pem"
+    echo "cp helm.key.pem \$(helm home)/key.pem"
+    echo "# initialize helm"
+    echo "helm init --override 'spec.template.spec.containers[0].command'='{/tiller,--storage=secret}' \\"
+    echo "          --tiller-tls \\"
+    echo "          --tiller-tls-verify \\"
+    echo "          --tiller-tls-cert=cert.pem \\"
+    echo "          --tiller-tls-key=key.pem \\"
+    echo "          --tls-ca-cert=ca.pem \\"
+    echo "          --service-account=tiller"
+else
+    echo "  helm init --service-account tiller"
+fi
 echo "# Prometheus setup"
 echo "  kubectl create -f prometheus-alertmanager-volume.yaml"
 echo "  kubectl create -f prometheus-server-volume.yaml"
-echo "  helm install --name prometheus -f prometheus-values.yaml stable/prometheus"
+echo "  helm install $tls --name prometheus -f prometheus-values.yaml stable/prometheus"
 
 if [ -n updateDeploy ]; then
     cat >container-manager-namespace.yaml <<EOF
@@ -166,9 +199,9 @@ echo "# password secret"
 echo "  kubectl create secret generic session-db-redis-pwd --from-file=redis-password=session-db-redis-pwd.txt"
 echo "# actual redis setup"
 echo "  if ! [[ -n \"\$(helm ls analytics-session-db | grep -E '^analytics-session-db\s' )\" ]]; then"
-echo "    helm install --name analytics-session-db -f session-redis-helm-values.yaml stable/redis"
+echo "    helm $tls install --name analytics-session-db -f session-redis-helm-values.yaml stable/redis"
 echo "  else"
-echo "    helm upgrade analytics-session-db -f session-redis-helm-values.yaml stable/redis"
+echo "    helm $tls upgrade analytics-session-db -f session-redis-helm-values.yaml stable/redis"
 echo "  fi"
 
 
@@ -197,9 +230,9 @@ echo "  kubectl create secret generic notebook-db-mongo-pwd --from-literal=datab
 echo "# actual mongo setup"
 
 echo "  if ! [[ -n \"\$(helm ls notebook-info-db | grep -E '^notebook-info-db\s' )\" ]]; then"
-echo "    helm install --name notebook-info-db -f notebook-mongo-helm-values.yaml stable/mongodb"
+echo "    helm install $tls --name notebook-info-db -f notebook-mongo-helm-values.yaml stable/mongodb"
 echo "  else"
-echo "    helm upgrade notebook-info-db -f notebook-mongo-helm-values.yaml stable/mongodb"
+echo "    helm upgrade $tls notebook-info-db -f notebook-mongo-helm-values.yaml stable/mongodb"
 echo "  fi"
 
 echo "## Environment setup: user settings redis db"
@@ -250,9 +283,9 @@ echo "# password secret"
 echo "  kubectl create secret generic user-settings-db --from-file=redis-password=user-settings-redis-pwd.txt"
 echo "# actual redis setup"
 echo "  if ! [[ -n \"\$(helm ls user-settings-db | grep -E '^user-settings-db\s' )\" ]]; then"
-echo "    helm install --name user-settings-db -f user-settings-redis-helm-values.yaml stable/redis"
+echo "    helm install $tls --name user-settings-db -f user-settings-redis-helm-values.yaml stable/redis"
 echo "  else"
-echo "    helm upgrade user-settings-db -f user-settings-redis-helm-values.yaml stable/redis"
+echo "    helm upgrade $tls user-settings-db -f user-settings-redis-helm-values.yaml stable/redis"
 echo "  fi"
 
 echo "## Environment setup, create namespace for pods of container manager"
