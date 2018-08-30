@@ -376,12 +376,12 @@ HERE
 if [ -n "$debug" ] ; then
     cat >> container-manager-deploy-$imageType.yaml <<EOF
         volumeMounts:
-        - mountPath: /app
+        - mountPath: "/usr/src/app"
           name: app-source
       volumes:
       - name: app-source
         hostPath:
-          path: $nomadRoot/servers/$target_hostname/analytics/$imageType
+          path: "$nomadRoot/servers/$target_hostname/analytics/$imageType"
 EOF
 fi
 fi
