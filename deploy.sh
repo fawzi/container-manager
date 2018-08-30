@@ -2,14 +2,17 @@
 nomadRoot=${nomadRoot:-/nomad/nomadlab}
 buildDocker=1
 updateDeploy=1
-imageType=beaker
 target_hostname=${target_hostname:-$HOSTNAME}
 chownRoot=
 tls=
+debug=
 
 while test ${#} -gt 0
 do
     case "$1" in
+      --debug)
+          debug=1
+          ;;
       --tls)
           tls=--tls
           ;;
@@ -20,10 +23,6 @@ do
       --docker-skip)
           buildDocker=""
           updateDeploy=1
-          ;;
-      --image-type)
-          shift
-          imageType=$1
           ;;
       --target-hostname)
           shift
@@ -38,7 +37,7 @@ do
           chownRoot=$1
           ;;
       *)
-          echo "usage: $0 [--tls] [--nomad-root <pathToNomadRoot>] [--chown-root <pathForPrometheusVolumes>] [--docker-only] [--docker-skip] [--target-hostname hostname]"
+          echo "usage: $0 [--debug] [--tls] [--nomad-root <pathToNomadRoot>] [--chown-root <pathForPrometheusVolumes>] [--docker-only] [--docker-skip] [--target-hostname hostname]"
           echo
           echo "Env variables: NODE_ENV, target_hostname, nomadRoot"
           echo "Examples:"
@@ -298,10 +297,13 @@ metadata:
 EOF
 fi
 echo "  kubectl create -f container-manager-namespace.yaml"
+echo
 
-echo "## Initial setup: create container manager service"
+for imageType in beaker jupyter creedo remotevis ; do
+
+echo "## $imageType Initial setup: create container manager service"
 if [ -n updateDeploy ]; then
-cat >container-manager-service.yaml <<HERE
+cat >container-manager-service-$imageType.yaml <<HERE
 kind: Service
 apiVersion: v1
 metadata:
@@ -320,7 +322,7 @@ fi
 echo "  kubectl create -f container-manager-service.yaml"
 
 if [ -n updateDeploy ]; then
-cat >container-manager-deploy.yaml <<HERE
+cat >container-manager-deploy-$imageType.yaml <<HERE
 apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
@@ -352,13 +354,38 @@ spec:
         - containerPort: 3003
         env:
         - name: SESSION_DB_PASSWORD
-          value: "$redisPass"
+          valueFrom:
+            secretKeyRef:
+              name: user-settings-db
+              key: redis-password
         - name: NOTEBOOK_INFO_DB_PASSWORD
-          value: "$mongoPass"
+          valueFrom:
+            secretKeyRef:
+              name: notebook-db-mongo-pwd
+              key: password
+        - name: NODE_ENV
+          value: "$nodeEnv"
+        - name: NODE_APP_INSTANCE
+          value: "$imageType"
 HERE
+
+if [ -n "$debug" ] ; then
+    cat >> container-manager-deploy-$imageType.yaml <<EOF
+        volumeMounts:
+        - mountPath: /app
+          name: app-source
+     volumes:
+      - name: app-source
+        hostPath:
+          path: $nomadRoot/servers/$target_hostname/analytics/$imageType
+EOF
+fi
 fi
 
-echo "# For an initial deployment, launch with:"
-echo "kubectl create --save-config -f container-manager-deploy.yaml"
-echo "# To simply update the deployment:"
-echo "kubectl apply -f container-manager-deploy.yaml"
+echo "if ! kubectl get deployment nomad-container-manager-$imageType >& /dev/null ;  then"
+echo "  kubectl create --save-config -f container-manager-deploy-$imageType.yaml"
+echo "else"
+echo "  kubectl apply -f container-manager-deploy-$imageType.yaml"
+echo "fi"
+echo
+done
