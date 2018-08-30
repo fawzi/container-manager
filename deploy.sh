@@ -24,6 +24,10 @@ do
           buildDocker=""
           updateDeploy=1
           ;;
+      --env)
+          shift
+          NODE_ENV=$1
+          ;;
       --target-hostname)
           shift
           target_hostname=$1
@@ -37,7 +41,7 @@ do
           chownRoot=$1
           ;;
       *)
-          echo "usage: $0 [--debug] [--tls] [--nomad-root <pathToNomadRoot>] [--chown-root <pathForPrometheusVolumes>] [--docker-only] [--docker-skip] [--target-hostname hostname]"
+          echo "usage: $0 [--debug] [--tls] [--nomad-root <pathToNomadRoot>] [--chown-root <pathForPrometheusVolumes>] [--env <NODE_ENV_VALUE>] [--docker-only] [--docker-skip] [--target-hostname hostname]"
           echo
           echo "Env variables: NODE_ENV, target_hostname, nomadRoot"
           echo "Examples:"
@@ -364,7 +368,7 @@ spec:
               name: notebook-db-mongo-pwd
               key: password
         - name: NODE_ENV
-          value: "$nodeEnv"
+          value: "$NODE_ENV"
         - name: NODE_APP_INSTANCE
           value: "$imageType"
 HERE
@@ -374,7 +378,7 @@ if [ -n "$debug" ] ; then
         volumeMounts:
         - mountPath: /app
           name: app-source
-     volumes:
+      volumes:
       - name: app-source
         hostPath:
           path: $nomadRoot/servers/$target_hostname/analytics/$imageType
