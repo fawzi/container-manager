@@ -28,9 +28,9 @@ usersettings_redis: {
 k8Api: {
   url: "https://labdev3-nomad.esc.rzg.mpg.de:6443"
   node: "labdev3-nomad.esc.rzg.mpg.de"
-  ca: "certs/ca.crt"
-  cert: "certs/client.crt"
-  key: "certs/client.key"
+  ca: "kube-certs/ca.crt"
+  cert: "kube-certs/client.crt"
+  key: "kube-certs/client.key"
 }
 passport: {
   strategy: "saml"
