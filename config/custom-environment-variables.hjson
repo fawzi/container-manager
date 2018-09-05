@@ -1,5 +1,19 @@
 {
   "app": {
     "port": "PORT"
+    "frontendAddr": "FRONTEND_BASE_URI"
+  }
+  "k8Api": {
+    "url":  "KUBERNETES_SERVER_URL"
+    "node": "KUBERNETES_NODE"
+    "ca":   "KUBERNETES_CA"
+    "cert": "KUBERNETES_CERT"
+    "key":  "KUBERNETES_KEY"
+  }
+  "session_redis": {
+    "password": "SESSION_DB_PASSWORD"
+  }
+  "usersettings_redis": {
+    "password": "USER_SETTINGS_DB_PASSWORD"
   }
 }
