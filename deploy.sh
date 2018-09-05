@@ -56,7 +56,7 @@ done
 
 chownRoot=${chownRoot:-$nomadRoot/servers/$target_hostname}
 version=$(git describe --tags --always --dirty)
-name="analytics-toolkit.nomad-coe.eu:5509/nomadlab/nomad-container-manager-$version"
+name="analytics-toolkit.nomad-coe.eu:5509/nomadlab/nomad-container-manager:$version"
 if [ -n "$buildDocker" ] ; then
     docker build -t $name .
     docker push $name
