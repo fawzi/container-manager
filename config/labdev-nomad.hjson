@@ -1,0 +1,9 @@
+{
+  app: {
+    ssl: {
+      key: "web-certs/key.pem"
+      cert: "web-certs/cert.pem"
+    }
+    frontendAddr: "https://labdev-nomad.esc.rzg.mpg.de"
+  }
+}

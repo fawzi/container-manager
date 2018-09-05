@@ -1,0 +1,9 @@
+{
+  app: {
+    ssl: {
+      key: "web-certs/key.pem"
+      cert: "web-certs/cert.pem"
+    }
+    frontendAddr: "https://analytics-toolkit.nomad-coe.eu"
+  }
+}

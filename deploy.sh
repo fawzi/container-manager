@@ -336,7 +336,7 @@ echo "  kubectl create secret generic kube-certs --from-file=ca.crt=ca.crt --fro
 echo "  popd"
 echo "# create secret with web certificates"
 echo "  if [ -e "web-certs" ] ; then"
-echo "    kubectl create secret generic ${secretWebCerts} --from-file=key=key.pem --from-file=cert=cert.pem"
+echo "    kubectl create secret generic ${secretWebCerts} --from-file=key.pem=key.pem --from-file=cert.pem=cert.pem"
 echo "  fi"
 echo
 
