@@ -6,6 +6,8 @@ target_hostname=${target_hostname:-$HOSTNAME}
 chownRoot=
 tls=
 debug=
+alwaysPull=
+secretWebCerts=
 
 while test ${#} -gt 0
 do
@@ -20,9 +22,16 @@ do
           buildDocker=1
           updateDeploy=""
           ;;
+      --alwaysPull)
+          alwaysPull=1
+          ;;
       --docker-skip)
           buildDocker=""
           updateDeploy=1
+          ;;
+      --secret-web-certs)
+          shift
+          secretWebCerts=${1:-web-certs}
           ;;
       --env)
           shift
@@ -60,6 +69,11 @@ name="analytics-toolkit.nomad-coe.eu:5509/nomadlab/nomad-container-manager:$vers
 if [ -n "$buildDocker" ] ; then
     docker build -t $name .
     docker push $name
+fi
+if [ -n "$alwaysPull" ] ; then
+    pullPolicy=Always
+else
+    pullPolicy=IfNotPresent
 fi
 
 echo "# Initial setup"
@@ -186,7 +200,9 @@ if [ -n updateDeploy ]; then
     SESSION_REDIS_PASS=$(head -1 session-db-redis-pwd.txt)
 
     cat >session-redis-helm-values.yaml <<EOF
-existingSecret: session-db-redis-pwd
+image:
+  pullPolicy: $pullPolicy
+existingSecret: analytics-session-db
 rbac:
   create: true
 metrics:
@@ -199,7 +215,7 @@ cluster:
 EOF
 fi
 echo "# password secret"
-echo "  kubectl create secret generic session-db-redis-pwd --from-file=redis-password=session-db-redis-pwd.txt"
+echo "  kubectl create secret generic analytics-session-db --from-file=redis-password=session-db-redis-pwd.txt"
 echo "# actual redis setup"
 echo "  if ! [[ -n \"\$(helm ls analytics-session-db | grep -E '^analytics-session-db\s' )\" ]]; then"
 echo "    helm $tls install --name analytics-session-db -f session-redis-helm-values.yaml stable/redis"
@@ -219,6 +235,8 @@ if [ -n updateDeploy ]; then
 
 # check how to use secret
     cat >notebook-mongo-helm-values.yaml <<EOF
+image:
+  pullPolicy: $pullPolicy
 mongodbRooPassword: "$(cat notebook-db-mongo-pwd.txt)"
 mongodbUsername: "notebookinfo"
 mongodbPassword: "$(cat notebook-db-mongo-pwd.txt)"
@@ -265,6 +283,8 @@ spec:
 EOF
 
     cat >user-settings-redis-helm-values.yaml <<EOF
+image:
+  pullPolicy: $pullPolicy
 existingSecret: user-settings-db
 rbac:
   create: true
@@ -291,7 +311,7 @@ echo "  else"
 echo "    helm upgrade $tls user-settings-db -f user-settings-redis-helm-values.yaml stable/redis"
 echo "  fi"
 
-echo "## Environment setup, create namespace for pods of container manager"
+echo "## Environment setup for container manager"
 if [ -n updateDeploy ]; then
 cat >container-manager-namespace.yaml <<EOF
 kind: Namespace
@@ -300,7 +320,24 @@ metadata:
   name: analytics
 EOF
 fi
+echo "# create namespace for pods of container manager"
 echo "  kubectl create -f container-manager-namespace.yaml"
+echo "# secret to pull images from analytics-toolkit.nomad-coe.eu:5509"
+echo "  kubectl create secret docker-registry garching-kube --docker-server=analytics-toolkit.nomad-coe.eu:5509 --docker-username=\$DOCKER_USERNAME --docker-password=\"\$DOCKER_PASSWORD\" --docker-email=\$DOCKER_EMAIL"
+echo "# get certificates to connect to kubernetes (either from kube-certs of ~/.minikube)"
+echo "  if [ -e kube-certs ] ; then"
+echo "    pushd kube-certs"
+echo "  elif [ -e ~/.minikube ] ; then"
+echo "    pushd  ~/.minikube"
+echo "  else"
+echo "    pushd ."
+echo "  fi"
+echo "  kubectl create secret generic kube-certs --from-file=ca.crt=ca.crt --from-file=client.crt=client.crt --from-file=client.key=client.key"
+echo "  popd"
+echo "# create secret with web certificates"
+echo "  if [ -e "web-certs" ] ; then"
+echo "    kubectl create secret generic ${secretWebCerts} --from-file=key=key.pem --from-file=cert=cert.pem"
+echo "  fi"
 echo
 
 for imageType in beaker jupyter creedo remotevis ; do
@@ -325,8 +362,9 @@ HERE
 fi
 echo "  kubectl create -f container-manager-service.yaml"
 
-if [ -n updateDeploy ]; then
-cat >container-manager-deploy-$imageType.yaml <<HERE
+if [ -n "$updateDeploy" ]; then
+    targetF=container-manager-deploy-$imageType.yaml
+    cat >$targetF <<HERE
 apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
@@ -349,7 +387,7 @@ spec:
       containers:
       - name: nomad-container-manager
         image: $name
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: $pullPolicy
         command:
         - npm
         - start
@@ -358,6 +396,11 @@ spec:
         - containerPort: 3003
         env:
         - name: SESSION_DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: analytics-session-db
+              key: redis-password
+        - name: USER_SETTINGS_DB_PASSWORD
           valueFrom:
             secretKeyRef:
               name: user-settings-db
@@ -371,19 +414,43 @@ spec:
           value: "$NODE_ENV"
         - name: NODE_APP_INSTANCE
           value: "$imageType"
-HERE
-
-if [ -n "$debug" ] ; then
-    cat >> container-manager-deploy-$imageType.yaml <<EOF
         volumeMounts:
+        - mountPath: "/usr/src/app/kube-certs"
+          name: kube-certs
+          readOnly: true
+HERE
+    if [ -n "$debug" ] ; then
+        cat >> $targetF <<EOF
         - mountPath: "/usr/src/app"
           name: app-source
+EOF
+    fi
+    if [ -n "$secretWebCerts" ] ; then
+        cat >> $targetF <<EOF
+        - mountPath: "/usr/src/app/web-certs"
+          name: web-certs
+EOF
+    fi
+    cat >> $targetF <<EOF
       volumes:
+      - name: kube-certs
+        secret:
+          secretName: kube-certs
+EOF
+    if [ -n "$debug" ] ; then
+        cat >> $targetF <<EOF
       - name: app-source
         hostPath:
           path: "$nomadRoot/servers/$target_hostname/analytics/$imageType"
 EOF
-fi
+    fi
+    if [ -n "$secretWebCerts" ] ; then
+        cat >> $targetF <<EOF
+      - name: web-certs
+        secret:
+          secretName: $secretWebCerts
+EOF
+    fi
 fi
 
 echo "if ! kubectl get deployment nomad-container-manager-$imageType >& /dev/null ;  then"
