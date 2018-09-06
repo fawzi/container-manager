@@ -434,10 +434,20 @@ EOF
         - mountPath: "/usr/src/app/kube-certs"
           name: kube-certs
           readOnly: true
+        - mountPath: "/data/shared"
+          name: user-shared
+        - mountPath: "/data/private"
+          name: user-private
       volumes:
       - name: kube-certs
         secret:
           secretName: kube-certs
+      - name: user-shared
+        hostPath:
+          path: $nomadRoot/user-data/shared
+      - name: user-private
+        hostPath:
+          path: $nomadRoot/user-data/private
 EOF
     if [ -n "$debug" ] ; then
         cat >> $targetF <<EOF
