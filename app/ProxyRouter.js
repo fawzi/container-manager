@@ -47,7 +47,7 @@ function getOrCreatePod(podName, repl, shouldCreate, next) {
           } else {
             //fs.writeFile("pod.yaml", template)
             //console.log("wrote evaulated template to pod.yaml")
-            guaranteeUserDir(info.user, function (){
+            guaranteeUserDir(repl.user, function (){
               k8.ns(config.k8component.namespace).service.post({ body: yaml.safeLoad(template, 'utf8')}, function(err, res2){
                 if(err) {
                   console.log(`#ERROR# Cannot start pod ${podName}, error: ${JSON.stringify(err)}`);
@@ -116,7 +116,7 @@ ProxyRouter.prototype.lookup = function(req, res, userID, isWebsocket, path, nex
     if (err) {
       console.log(`ERROR no replacements: lookup without visiting the entry point ${config.k8component.entryPoint.path} (${JSON.stringify(err)})`)
     } else {
-      const podName = components.podNameForImageType(userID, shortSession)
+      const podName = components.podNameForRepl(repl)
       resolvePod(podName, function (err, target) {
         if (err) {
           console.log(`ERROR ${JSON.stringify(err)}`)
