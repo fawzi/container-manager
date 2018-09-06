@@ -208,6 +208,7 @@ rbac:
 metrics:
   enabled: true
 master:
+  disableCommands: ""
   persistence:
     enabled: false
 cluster:
@@ -291,6 +292,7 @@ rbac:
 metrics:
   enabled: true
 master:
+  disableCommands: ""
   persistence:
     enabled: true
     storageClass: manual-user-settings
