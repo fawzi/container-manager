@@ -39,6 +39,8 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
     let user = components.selfUserName(req)
     components.replacementsForUser(user, extraArgs, function(err, repl) {
       if (!err) {
+        if (!req.session.replacements)
+          req.session.replacements = {}
         req.session.replacements[cconf.image.imageType] = repl
         const podName = components.podNameForRepl(repl)
         proxyRouter.getOrCreatePod(podName, repl, true, function (err, podInfo) {

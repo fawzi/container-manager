@@ -19,11 +19,11 @@ mongoDb: {
 }
 session_redis: {
   port: 6379
-  host: "redis-session-db-master"
+  host: "analytics-session-db-redis-master"
 }
 usersettings_redis: {
   port: 6379
-  host: "redis-user-db-master"
+  host: "user-settings-db-redis-master"
 }
 k8Api: {
   url: "https://labdev3-nomad.esc.rzg.mpg.de:6443"
