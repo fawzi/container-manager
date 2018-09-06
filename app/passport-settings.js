@@ -12,7 +12,8 @@ module.exports = function (passport, config) {
   });
 
   if (config.passport.strategy === "saml") {
-    passport.use(new SamlStrategy(
+    console.log(`Using saml strategy`)
+    passport.use('saml',new SamlStrategy(
       {
         path: config.passport.saml.path,
         entryPoint: config.passport.saml.entryPoint,
@@ -31,16 +32,30 @@ module.exports = function (passport, config) {
                     });
       }));
   } else if (config.passport.strategy === "local") {
-    passport.use(new LocalStrategy(
-      function(username, password, done) {
-        const pass = config.passport.users[username]
-        if (pass === undefined)
-          return done(null, false, { message: 'Unknown user.' });
-        else if (pass == password)
-          return done(null, user)
-        else
-          return done(null, false, { message: 'Incorect password.' });
-      }));
+    console.log(`Using local strategy`)
+    passport.use('local',new LocalStrategy({
+      usernameField : 'username',
+      passwordField : 'password',
+      passReqToCallback: false
+    }, function(username, password, done) {
+      console.log(`entering verification callback`)
+      const pass = config.passport.users[username]
+      if (pass === undefined) {
+        console.log(`unknonw user ${username}`)
+        return done(null, false, { message: 'Unknown user.' });
+      } else if (pass == password) {
+        console.log(`successful login for ${username}`)
+        return done(null, {
+          id: username,
+          email: username+"@nowhere",
+          displayName: username,
+          firstName: username,
+          lastName: "None"})
+      } else {
+        console.log(`failed login for ${username}`)
+        return done(null, false, { message: 'Incorrect password.' });
+      }
+    }));
   } else {
     throw "Invalid passport strategy: ${config.passport.strategy}"
   }

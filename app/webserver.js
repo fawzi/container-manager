@@ -24,12 +24,12 @@ module.exports = function(config, models, cmds) {
     loginPrefix = '/userapi' // avoid??
 
   config.passport.saml.path = loginPrefix + config.passport.saml.path
-  require('../config/passport')(passport, config);
+  require('./passport-settings')(passport, config);
 
   var app = express();
 
   const env = process.env["NODE_ENV"] || 'development'
-  if (env === 'development') {
+  if (env === 'development' || env === 'localSetup') {
     // only use in development
     app.use(errorHandler())
     app.use(morgan('combined'));
@@ -38,6 +38,7 @@ module.exports = function(config, models, cmds) {
 
   //NOTE: Bodyparser doesn't allow the Post request to be forwarded by the http-proxy. Careful before using it!!!
   //This code is kept here to stop people from making a ridiculous error that's almost impossible to debug when used on the app.
+  // selectively add body parser to the call that need it (like the local login)
   //app.use(bodyParser.json());
   //app.use(bodyParser.urlencoded({extended: true}));
 
@@ -48,7 +49,7 @@ module.exports = function(config, models, cmds) {
   const sessionManager = session(
     {
       store: new RedisStore({client: client}),
-      resave: true,
+      resave: false,
       saveUninitialized: true,
       secret: config.app.secret,
       httpOnly: false
@@ -73,11 +74,33 @@ module.exports = function(config, models, cmds) {
     const flash = require('connect-flash');
     app.use(flash());
 
-    app.post('/login',
-             passport.authenticate('local', { successRedirect: '/',
-                                              failureRedirect: '/login',
-                                              failureFlash: false })
-            );
+/*    app.post('/login', bodyParser.urlencoded({extended: true}), function(req, res, next) {
+      console.log(`post to login path ${JSON.stringify(req.url)} query:${JSON.stringify(req.query)}, params: ${JSON.stringify(req.params)}, body: ${JSON.stringify(req.body)}`)
+      passport.authenticate('local', function (error, user, info) {
+        // this will execute in any case, even if a passport strategy will find an error
+        // log everything to console
+        console.log(error);
+        console.log(user);
+        console.log(info);
+
+        if (error) {
+          res.status(401).send(error);
+        } else if (!user) {
+          res.status(401).send(info);
+        } else {
+          next();
+        }
+
+        res.status(401).send(info);
+      })(req, res);
+    }, function (req, res) {
+      res.status(200).send('logged in!');
+    });
+// { successRedirect: '/',
+//                                              failureRedirect: '/login',
+//                                              failureFlash: true })
+//      (req, res, next);
+//    })*/
   }
 
   app.get(loginPrefix + '/login',function(req, res, next) {
@@ -110,11 +133,12 @@ module.exports = function(config, models, cmds) {
         req.session.returnTo = req.query.redirectTo
       next()
     }
-  }, passport.authenticate(config.passport.strategy,
-                           {
-                             successReturnToOrRedirect: '/',
-                             failureRedirect: '/login'
-                           })
+  }, passport.authenticate(
+    config.passport.strategy,
+    {
+      successReturnToOrRedirect: '/',
+      failureRedirect: '/login'
+    })
          );
 
   app.get(loginPrefix + '/login/logout', function(req, res){
@@ -136,7 +160,7 @@ module.exports = function(config, models, cmds) {
            passport.authenticate(config.passport.strategy,
                                  {
                                    failureRedirect: '/',
-                                   failureFlash: true
+                                   failureFlash: false
                                  }),
            function (req, res) {
              if (req.session && req.session.returnTo) {
@@ -146,7 +170,6 @@ module.exports = function(config, models, cmds) {
              }
            }
           );
-
 
   if (cmds.includes('webserver')) {
     console.log('starting webserver')
@@ -211,7 +234,7 @@ module.exports = function(config, models, cmds) {
           }*/
     });
     const k8 = require('./kubernetes');
-    require('../config/routes')(app,redirect, config, proxyServer, proxyRouter, k8, passport, fs, ensureLoggedIn, bodyParser);
+    require('./routes')(app,redirect, config, proxyServer, proxyRouter, k8, passport, fs, ensureLoggedIn, bodyParser);
 
     httpServer.on('upgrade', function (req, socket, head) {
       cookieParser(req, {}, function() {
@@ -233,8 +256,8 @@ module.exports = function(config, models, cmds) {
   }
   if (cmds.includes('apiserver')) {
     console.log('starting apiserver')
-    require('../config/userapi')(app, config, passport,  models, ensureLoggedIn, bodyParser)
+    require('./userapi')(app, config, passport,  models, ensureLoggedIn, bodyParser)
   }
-
+  console.log(`listening on port ${config.app.port}`)
   httpServer.listen(config.app.port);
 }
