@@ -417,9 +417,6 @@ spec:
         - name: NODE_APP_INSTANCE
           value: "$imageType"
         volumeMounts:
-        - mountPath: "/usr/src/app/kube-certs"
-          name: kube-certs
-          readOnly: true
 HERE
     if [ -n "$debug" ] ; then
         cat >> $targetF <<EOF
@@ -434,6 +431,9 @@ EOF
 EOF
     fi
     cat >> $targetF <<EOF
+        - mountPath: "/usr/src/app/kube-certs"
+          name: kube-certs
+          readOnly: true
       volumes:
       - name: kube-certs
         secret:
