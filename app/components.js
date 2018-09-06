@@ -172,11 +172,15 @@ function selfUserName(req) {
 // returns the cached replacements if available, creating them if the entryPoint is not exclusive
 function cachedReplacements(req, next) {
   let imageType = cconfig.image.imageType
-  var repl = req.session.replacements[imageType]
+  var repl = req.session.replacements
+  if (repl)
+    repl=repl[imageType]
   if (repl) {
     next(null, repl)
   } else if (!cconfig.entryPoint.exclusiveStartPoint) {
     replacementsForUser(selfUserName(req), {}, function(err, newRepl) {
+      if (!req.session.replacements)
+        req.session.replacements = {}
       req.session.replacements[imageType] = newRepl
       next(null, newRepl)
     })
