@@ -103,7 +103,7 @@ function shortSession(sessionID) {
 
 /// returns the name of the pod for the given replacements
 function podNameForRepl(repl) {
-  const imageType = cconfig.image.name
+  const imageType = cconfig.image.imageType
   const itypeRe = /^[a-z0-9]+$/
 
   if (!itypeRe.test(imageType))
