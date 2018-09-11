@@ -434,9 +434,9 @@ EOF
         - mountPath: "/usr/src/app/kube-certs"
           name: kube-certs
           readOnly: true
-        - mountPath: "/data/shared"
+        - mountPath: "/nomad/nomadlab/user-data/shared"
           name: user-shared
-        - mountPath: "/data/private"
+        - mountPath: "/nomad/nomadlab/user-data/private"
           name: user-private
       volumes:
       - name: kube-certs
