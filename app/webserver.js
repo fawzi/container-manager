@@ -19,12 +19,14 @@ module.exports = function(config, models, cmds) {
   const fs = require('fs');
   const ensureLoggedIn = require('connect-ensure-login').ensureLoggedIn;
 
-  var loginPrefix = ''
-  if (cmds.includes('apiserver') && !cmds.includes('webserver'))
-    loginPrefix = '/userapi' // avoid??
+  var loginPrefixes = ['']
+  if (cmds.includes('apiserver'))
+    loginPrefixes.push('/userapi')
+  if (cmds.includes('webserver'))
+    loginPrefixes.push(config.k8component.image.imageType)
 
-  config.passport.saml.path = loginPrefix + config.passport.saml.path
-  require('./passport-settings')(passport, config);
+  config.passport.saml.path = loginPrefixes[loginPrefixes.length - 1] + config.passport.saml.path
+  const strategies = require('./passport-settings')(passport, config);
 
   var app = express();
 
@@ -69,41 +71,15 @@ module.exports = function(config, models, cmds) {
     httpServer = https.createServer(httpsOptions, app);
   }
 
+  for (var loginPrefixIndex in loginPrefixes) {
+    const loginPrefix = loginPrefixes[loginPrefixIndex]
+    const loginUri = loginPrefix + '/login'
+  //if (config.passport.strategy === "local") {
+  //  const flash = require('connect-flash');
+  //  app.use(flash());
+  //}
 
-  if (config.passport.strategy === "local") {
-    const flash = require('connect-flash');
-    app.use(flash());
-
-/*    app.post('/login', bodyParser.urlencoded({extended: true}), function(req, res, next) {
-      console.log(`post to login path ${JSON.stringify(req.url)} query:${JSON.stringify(req.query)}, params: ${JSON.stringify(req.params)}, body: ${JSON.stringify(req.body)}`)
-      passport.authenticate('local', function (error, user, info) {
-        // this will execute in any case, even if a passport strategy will find an error
-        // log everything to console
-        console.log(error);
-        console.log(user);
-        console.log(info);
-
-        if (error) {
-          res.status(401).send(error);
-        } else if (!user) {
-          res.status(401).send(info);
-        } else {
-          next();
-        }
-
-        res.status(401).send(info);
-      })(req, res);
-    }, function (req, res) {
-      res.status(200).send('logged in!');
-    });
-// { successRedirect: '/',
-//                                              failureRedirect: '/login',
-//                                              failureFlash: true })
-//      (req, res, next);
-//    })*/
-  }
-
-  app.get(loginPrefix + '/login',function(req, res, next) {
+    app.get(loginUri,function(req, res, next) {
     if (config.passport.strategy === "local") {
       res.send(`
         <html>
@@ -112,7 +88,7 @@ module.exports = function(config, models, cmds) {
            </head>
            <body>
              <h1>Login</h1>
-             <form action="/login" method="post">
+             <form action="${loginUri}/callback" method="post">
                 <div>
                     <label>Username:</label>
                     <input type="text" name="username"/>
@@ -137,29 +113,45 @@ module.exports = function(config, models, cmds) {
     config.passport.strategy,
     {
       successReturnToOrRedirect: '/',
-      failureRedirect: '/login'
+      failureRedirect: loginUri
     })
          );
 
-  app.get(loginPrefix + '/login/logout', function(req, res){
+  app.get(loginUri + '/logout', function(req, res){
     var user;
       try {
         user = req.session.passport.user.id
       } catch (e) {
         user = null
       }
-    req.logout();
-    req.session.destroy(function(err) {
-      console.log(`user ${user} logged out`);
-    })
-    res.redirect('/');
+    if (strategies['saml']) {
+      strategies['saml'].logout(req, function(){
+        req.logout();
+        req.session.destroy(function(err) {
+          console.log(`user ${user} logged out`);
+        })
+        res.redirect('/');
+      })
+    } else {
+      req.logout();
+      req.session.destroy(function(err) {
+        console.log(`user ${user} logged out`);
+      })
+      res.redirect('/');
+    }
   });
 
-  //Passport SAML request is not accepted until the body is parsed. And since bodyParser can not used in the express app, it is called here separately.
-  app.post(config.passport.saml.path,bodyParser.json(),bodyParser.urlencoded({extended: true}),
+  //Passport SAML request is not accepted until the body is parsed.
+  // Since bodyParser can not used in the express app, it is called here separately.
+  //
+  // To debug passport use a custom callback function (error, user, info) {...}
+  // instead of the dictionary in the call to passport.authenticate, as described in
+    // https://dmitryrogozhny.com/blog/easy-way-to-debug-passport-authentication-in-express
+    // config.passport.saml.path should be this
+  app.post(loginUri + '/callback',bodyParser.json(),bodyParser.urlencoded({extended: true}),
            passport.authenticate(config.passport.strategy,
                                  {
-                                   failureRedirect: '/',
+                                   failureRedirect: loginUri,
                                    failureFlash: false
                                  }),
            function (req, res) {
@@ -170,6 +162,7 @@ module.exports = function(config, models, cmds) {
              }
            }
           );
+  }
 
   if (cmds.includes('webserver')) {
     console.log('starting webserver')
