@@ -11,9 +11,10 @@ module.exports = function (passport, config) {
     done(null, user);
   });
 
+  const strategies={}
   if (config.passport.strategy === "saml") {
     console.log(`Using saml strategy`)
-    passport.use('saml',new SamlStrategy(
+    const samlStrategy = new SamlStrategy(
       {
         path: config.passport.saml.path,
         entryPoint: config.passport.saml.entryPoint,
@@ -30,10 +31,12 @@ module.exports = function (passport, config) {
                       firstName: profile.givenName,
                       lastName: profile.sn
                     });
-      }));
+      })
+    strategies['saml'] = samlStrategy
+    passport.use('saml', samlStrategy);
   } else if (config.passport.strategy === "local") {
     console.log(`Using local strategy`)
-    passport.use('local',new LocalStrategy({
+    const localStrategy = new LocalStrategy({
       usernameField : 'username',
       passwordField : 'password',
       passReqToCallback: false
@@ -55,8 +58,11 @@ module.exports = function (passport, config) {
         console.log(`failed login for ${username}`)
         return done(null, false, { message: 'Incorrect password.' });
       }
-    }));
+    })
+    strategies['local'] = localStrategy
+    passport.use('local', localStrategy);
   } else {
     throw "Invalid passport strategy: ${config.passport.strategy}"
   }
+  return strategies
 };
