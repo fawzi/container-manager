@@ -13,3 +13,12 @@ passport: {
     test9: test9
   }
 }
+"k8Api": {
+    "url": "https://192.168.99.100:8443",
+    "node": "192.168.99.100"
+}
+app: {
+  baseReplacements: {
+    nomadRoot: "/hosthome/mohamed/nomadlab"
+  }
+}

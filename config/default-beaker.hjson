@@ -2,9 +2,14 @@ k8component: {
   image: {
     imageType: beaker
     imageSubtype: default1
-    image: "labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.11.5-7-g851b73b-dirty",
+    image: "labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.11.5-232-gcd982cf-dirty"
     port: 8801,
     prefix: "/beaker",
     homePath: "/home/beaker"
+    healthPath: "/beaker"
+    healthDelay: 5
+    healthPeriod: 5
+    livePath: "/beaker"
+    liveDelay: 15
   }
 }

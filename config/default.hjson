@@ -12,7 +12,9 @@ app: {
   baseUri: "http://127.0.0.1"
   catchErrors: false
   templatesDir: "{{baseDir}}/kubeTemplates"
-  baseReplacements: {}
+  baseReplacements: {
+    nomadRoot: "/nomad/nomadlab"
+  }
 }
 mongoDb: {
   url: "mongodb://notebook-info-db-mongodb/filedatabase"
@@ -59,6 +61,12 @@ k8component: {
     prefix: "/beaker"
     homePath: "/home/beaker"
     autoRestart: true
+    healthPath: "/"
+    healthDelay: 2
+    healthPeriod: 10
+    livePath: "/"
+    liveDelay: 2
+    livePeriod: 30
   }
   entryPoint: {
     path: "/notebook-edit/*"
@@ -72,9 +80,9 @@ k8component: {
 }
 userInfo: {
   demoToWatch: "/nomad/nomadlab/demos"
-  basePathToWatch: "/nomad/nomadlab/beaker-notebooks/user-data",
-  privateDir: "/nomad/nomadlab/beaker-notebooks/user-data/private",
-  sharedDir: "/nomad/nomadlab/beaker-notebooks/user-data/shared",
+  basePathToWatch: "/nomad/nomadlab/user-data",
+  privateDir: "/nomad/nomadlab/user-data/private",
+  sharedDir: "/nomad/nomadlab/user-data/shared",
   privateDirInContainer: "/data/private",
   sharedDirInContainer: "/data/shared",
   mySharedDirInContainer: "/data/my-shared"
