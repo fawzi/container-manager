@@ -340,7 +340,14 @@ echo "# create secret with web certificates"
 echo "  if [ -e "web-certs" ] ; then"
 echo "    kubectl create secret generic ${secretWebCerts} --from-file=key.pem=key.pem --from-file=cert.pem=cert.pem"
 echo "  fi"
-echo
+echo "# minikube setup
+if [ -z "$KUBERNETES_SERVER_URL" -and -e "$HOME/.minikube" ] ; then
+    KUBERNETES_SERVER_URL=https://$(minikube ip):8443
+fi
+if [ -z "$KUBERNETES_NODE" -and -e "$HOME/.minikube" ] ; then
+    KUBERNETES_NODE=$(minikube ip)
+fi
+
 
 for imageType in beaker jupyter creedo remotevis ; do
 
@@ -412,6 +419,20 @@ spec:
             secretKeyRef:
               name: notebook-db-mongo-pwd
               key: password
+HERE
+if [ -n "$KUBERNETES_SERVER_URL" ] ; then
+    cat >$targetF <<HERE
+        - name: KUBERNETES_SERVER_URL
+          value: "$KUBERNETES_SERVER_URL"
+HERE
+fi
+if [ -n "$KUBERNETES_NODE" ] ; then
+    cat >$targetF <<HERE
+        - name: KUBERNETES_NODE
+          value: "$KUBERNETES_NODE"
+HERE
+fi
+cat >$targetF <<HERE
         - name: NODE_ENV
           value: "$NODE_ENV"
         - name: NODE_APP_INSTANCE
