@@ -7,6 +7,7 @@ const cconfig = config.k8component
 const userSettings = require('./userSettings')
 const crypto = require('crypto');
 const url = require('url');
+const compact_sha = require('./compact-sha')
 
 var baseRepl = {
   baseDir: baseDir,
@@ -155,6 +156,8 @@ function replacementsForUser(user, extraRepl, next) {
   repl['user'] = user
   repl['imageType'] = imageType
   repl['podName'] = podNameForRepl(repl)
+  delete repl.replacementsChecksum
+  repl.replacementsChecksum = compact_sha.objectSha(repl)
 
   next(null, repl)
 }
