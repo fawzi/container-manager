@@ -1,15 +1,19 @@
+---
 apiVersion: "v1"
-kind: "ReplicationController",
 kind: Pod
+metadata:
+  name: "{{podName}}"
   labels:
     user: "{{user}}"
-    app: "{{imageType}}"
+    image-type: "{{imageType}}"
+    image-subtype: "{{imageSubtype}}"
+    replacements-checksum: "{{replacementsChecksum}}"
 spec:
   containers:
   - image: "{{image}}"
     name: "{{imageType}}"
     ports:
-    - containerPort: "{{port}}"
+    - containerPort: {{port}}
       name: "main-port"
       protocol: "TCP"
     imagePullPolicy: "IfNotPresent"
@@ -23,9 +27,6 @@ spec:
     - mountPath: "/normalized"
       name: "normalized-data-volume"
       readOnly: true
-    - mountPath: "{{homePath}}/notebooks"
-      name: notebooks-data-volume
-      readOnly: true
     - mountPath: "/data/private/{{user}}"
       name: "private-data-volume"
     - mountPath: "/data/shared"
@@ -33,18 +34,27 @@ spec:
       readOnly: true
     - mountPath: "/data/shared/{{user}}"
       name: "my-shared-data-volume"
+    readinessProbe:
+      httpGet:
+        path: "{{healthPath}}"
+        port: {{port}}
+        initialDelaySeconds: {{healthDelay}}
+    livenessProbe:
+      httpGet:
+        path: "{{livePath}}"
+        port: {{port}}
+        initialDelaySeconds: {{liveDelay}}
+        periodSeconds: {{livePeriod}}
   volumes:
   - name: "parsed-data-volume"
-    hostPath: { "path": "/nomad/nomadlab/parsed" }
+    hostPath: { "path": "{{nomadRoot}}/parsed" }
   - name: "raw-data-volume"
-    hostPath: { "path": "/nomad/nomadlab/raw-data"}
+    hostPath: { "path": "{{nomadRoot}}/raw-data"}
   - name: "normalized-data-volume"
-    hostPath: { "path": "/nomad/nomadlab/normalized" }
-  - name: "notebooks-data-volume"
-    hostPath: { "path": "/nomad/nomadlab/beaker-notebooks/notebooks" }
+    hostPath: { "path": "{{nomadRoot}}/normalized" }
   - name: "private-data-volume"
-    hostPath: { "path": "{{userDataHostPath}}/private/{{user}}" }
+    hostPath: { "path": "{{nomadRoot}}/user-data/private/{{user}}" }
   - name: "shared-data-volume"
-    hostPath: { "path": "{{userDataHostPath}}/shared" }
+    hostPath: { "path": "{{nomadRoot}}/user-data/shared" }
   - name: "my-shared-data-volume"
-    hostPath: { "path": "{{userDataHostPath}}/shared/{{user}}" }
+    hostPath: { "path": "{{nomadRoot}}/user-data/shared/{{user}}" }
