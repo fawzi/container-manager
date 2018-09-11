@@ -13,8 +13,9 @@ var baseRepl = {
   baseUri: config.app.baseUri,
   baseUriPath: url.parse(config.app.baseUri).path
 };
-for (k in config.app.baseReplacements)
-  repl[k] = baseRepl[k];
+const br = config.app.baseReplacements
+for (k in br)
+   baseRepl[k] = br[k];
 
 // Create a template from the given string
 function templatize(str) {
