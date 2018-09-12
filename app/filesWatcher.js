@@ -7,6 +7,8 @@ module.exports = function(config, models){
   
   const Notebook = models.Notebook
   const Rusage = models.Rusage
+  const stringify = require('json-stringify-safe')
+  const logger = require('./logger')
 
   //TODO: Write a better errorHandler
   function errorHandler(err) {
@@ -28,28 +30,28 @@ module.exports = function(config, models){
       if (!fs.existsSync(notebook.path)) {
         Notebook.remove({ path: notebook.path }, function (err) {
           if (err) return errorHandler(err);
-          console.log(`Removed ${notebook.path}`)
+          logger.info(`Removed ${notebook.path}`)
         });
       }
     }).on('error', function(err) {
-      console.log(`Failed to check data in db due to ${err}`);
+      logger.warn(`Failed to check data in db due to ${err}`);
     })
     /*Rusage.find({}).cursor().on('data', function(rUsage) {
       if (!(username in rUsage) || !rUsage.username) {
         Rusage.remove({ username: username }, function (err) {
           if (err) return errorHandler(err);
-          console.log(`Removed resources for ${rUsage.username}`)
+          logger.info(`Removed resources for ${rUsage.username}`)
         });
       }
       const path = config.userInfo.sharedDir + '/' + rUsage.username
       if (!fs.existsSync(path)) {
         Rusage.remove({ username: username }, function (err) {
           if (err) return errorHandler(err);
-          console.log(`Removed resources for ${rUsage.username}`)
+          logger.info(`Removed resources for ${rUsage.username}`)
         });
       }
     }).on('error', function(err) {
-      console.log(`Failed to check resource usage data in db due to ${err}`);
+      logger.warn(`Failed to check resource usage data in db due to ${err}`);
     })*/
   }
 
@@ -66,11 +68,11 @@ module.exports = function(config, models){
     } else {
       lastDiskUpdate[username] = currentDate
     }
-    console.log(`recomputing size for ${username} ${mdate}`)
+    logger.debug(`recomputing size for ${username} ${mdate}`)
     getSize(config.userInfo.sharedDir + '/' + username, function(err, sharedSize) {
       var sharedSizeGB;
       if (err) {
-        console.log(`Could not compute size of ${config.userInfo.sharedDir + '/' + username} due to ${err}`);
+        logger.warn(`Could not compute size of ${config.userInfo.sharedDir + '/' + username} due to ${err}`);
         sharedSizeGB = -1;
       } else {
         sharedSizeGB = sharedSize / (1024.0*1024.0*1024.0);
@@ -78,7 +80,7 @@ module.exports = function(config, models){
       getSize(config.userInfo.privateDir + '/' + username, function(err, privateSize) {
         var privateSizeGB;
         if (err) {
-          console.log(`Could not compute size of ${config.userInfo.privateDir + '/' + username} due to ${err}`);
+          logger.warn(`Could not compute size of ${config.userInfo.privateDir + '/' + username} due to ${err}`);
           privateSizeGB = -1;
         } else {
           privateSizeGB = privateSize / (1024.0*1024.0*1024.0);
@@ -90,10 +92,10 @@ module.exports = function(config, models){
           privateStorageGB: privateSizeGB,
           cpuUsage: 0.0
         }
-        console.log(`Did compute size: ${JSON.stringify(rd)}`)
+        logger.debug(`Did compute size: ${stringify(rd)}`)
         models.Rusage.findOne({ username: username }, null, function (err, rUsage) {
           if (err) {
-            console.log(`Error: could not fetch old disk usage for ${username} due to ${err}`);
+            logger.warn(`Could not fetch old disk usage for ${username} due to ${err}`);
           } else {
             var toUpdate;
             if (rUsage) {
@@ -105,9 +107,9 @@ module.exports = function(config, models){
             }
             toUpdate.save(function(err) {
               if (err)
-                console.log(`Error: could not save disk usage for ${username} due to ${err}`);
+                logger.warn(`Could not save disk usage for ${username} due to ${err}`);
               else
-                console.log('Disk usage added for the user: ' + username);
+                logger.debug('Disk usage added for the user: ' + username);
             });
           }
         })
@@ -119,7 +121,7 @@ module.exports = function(config, models){
   // might trigger a size recomputation
   function handleNotebook(path, stats) {
     // compare updated_at with stats.mdate? currently always update on startup...
-    // console.log('Handling notebook ' + path);
+    // logger.debug('Handling notebook ' + path);
     var sharedDir = config.userInfo.sharedDir;
     if (sharedDir[sharedDir.length - 1 ] != '/')
       sharedDir = sharedDir + '/';
@@ -142,10 +144,10 @@ module.exports = function(config, models){
       user = partialPath.split('/',1)[0];
       pathInContainer = '/data/private/' + partialPath
     } else {
-      console.log("Received invalid path " + path)
+      logger.warn("Received invalid path " + path)
       return;
     }
-    //console.log(`partialPath:${partialPath}, user:${user}`)
+    //logger.debug(`partialPath:${partialPath}, user:${user}`)
     let shortPath
     if (isPublic)
       shortPath = "shared/"
@@ -185,7 +187,7 @@ module.exports = function(config, models){
         created_at: stats.ctime,
         updated_at: stats.mtime
       };
-      //console.log(`handling notebook to ${JSON.stringify(f)}`)
+      //logger.debug(`handling notebook to ${stringify(f)}`)
       var newNotebook;
       Notebook.findOne({path: path}, function(err, notebook) {
         newNotebook = notebook
@@ -198,7 +200,7 @@ module.exports = function(config, models){
         // save the notebook
         newNotebook.save(function(err) {
           if (err) errorHandler(err);
-          console.log('Handled Database entry for the notebook: ' + path);
+          logger.debug('Handled Database entry for the notebook: ' + path);
           recomputeSize(user, stats.mtime);
         });
       });
@@ -207,7 +209,7 @@ module.exports = function(config, models){
 
   // callback when a notebook is deleted
   function deleteNotebook(path) {
-    console.log('Notebook deleted!' + path);
+    logger.info('Notebook deleted!' + path);
     Notebook.remove({ path: path }, function (err) {
       if (err) return errorHandler(err);
       // removed!
@@ -216,19 +218,19 @@ module.exports = function(config, models){
 
   // callback when a notebook is added (or on the initial startup
   function addNewNotebook(path, stats) {
-    console.log('Notebook added!' + path);
+    logger.debug('Notebook added!' + path);
     handleNotebook(path, stats)
   }
 
   // callback when a notebook changes
   function changeNotebook(path,stats) {
-    console.log('Notebook change!' + path);
+    logger.debug('Notebook change!' + path);
     handleNotebook(path, stats)
   }
 
   verifyPresent();
 
-  console.log('starting watcher')
+  logger.info('starting watcher')
   var watcher = chokidar.watch(config.userInfo.basePathToWatch+ '/**/*.bkr', {
     usePolling: true, // more expensive, but works also on GPFS with updates from multiple machines
     interval: 1000,
@@ -238,7 +240,7 @@ module.exports = function(config, models){
     addNewNotebook(path, stats)
   })
     .on('unlink', (path) =>  deleteNotebook(path))
-    .on('ready', () => console.log('Initial scan complete. Ready for changes'))
+    .on('ready', () => logger.info('Initial scan complete. Ready for changes'))
     .on('change', (path,stats) => changeNotebook(path,stats));
 
 }

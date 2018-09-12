@@ -18,6 +18,7 @@ module.exports = function(config, models, cmds) {
   const stringify = require('json-stringify-safe');
   const fs = require('fs');
   const ensureLoggedIn = require('connect-ensure-login').ensureLoggedIn;
+  const logger = require('./logger')
 
   var loginPrefixes = ['']
   if (cmds.includes('apiserver'))
@@ -128,14 +129,14 @@ module.exports = function(config, models, cmds) {
       strategies['saml'].logout(req, function(){
         req.logout();
         req.session.destroy(function(err) {
-          console.log(`user ${user} logged out`);
+          logger.info(`user ${user} logged out`);
         })
         res.redirect('/');
       })
     } else {
       req.logout();
       req.session.destroy(function(err) {
-        console.log(`user ${user} logged out`);
+        logger.info(`user ${user} logged out`);
       })
       res.redirect('/');
     }
@@ -165,7 +166,7 @@ module.exports = function(config, models, cmds) {
   }
 
   if (cmds.includes('webserver')) {
-    console.log('starting webserver')
+    logger.info('starting webserver')
     const ProxyRouter = require('./ProxyRouter')
     const proxyRouter = new ProxyRouter({
       backend: client
@@ -186,11 +187,11 @@ module.exports = function(config, models, cmds) {
     function redirect(req, res, userID, isWebsocket, path, next) {
       var sessID = (userID === undefined) ?  'unknownSess1' : userID;
       if(sessID == 'unknownSess1')  {
-        console.log("#ERROR# session not initialized");
+        logger.error("Session not initialized");
       }
 
       proxyRouter.lookup(req, res, sessID, isWebsocket, path, function(route) {
-        console.log('Looked up route:' + stringify(route));
+        //logger.debug('Looked up route:' + stringify(route));
         if (route) {
           try{
             next(route);
@@ -248,9 +249,9 @@ module.exports = function(config, models, cmds) {
 
   }
   if (cmds.includes('apiserver')) {
-    console.log('starting apiserver')
+    logger.info('starting apiserver')
     require('./userapi')(app, config, passport,  models, ensureLoggedIn, bodyParser)
   }
-  console.log(`listening on port ${config.app.port}`)
+  logger.info(`listening on port ${config.app.port}`)
   httpServer.listen(config.app.port);
 }

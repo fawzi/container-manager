@@ -4,6 +4,7 @@ const fs = require('fs');
 const components = require('./components');
 const yaml = require('js-yaml')
 const k8 = require('./kubernetes');
+const logger = require('./logger')
 
 const reloadMsg = `<html><head><title>Starting up!</title><meta http-equiv="refresh" content="${config.app.pageReloadTime}" ></head><body><h3>Please wait while we start a container for you!</h3><p>You might need to refresh manually (F5)...</body></html>`;
 
@@ -14,9 +15,9 @@ function guaranteeDir(path, next) {
         if(err) throw err;
         fs.chown(path, 1000, 1000, (err) => {
           if (err)
-            console.log('Dir '+ path + ' created, error in chown: ' + stringify(err));
+            logger.warn('Dir '+ path + ' created, error in chown: ' + stringify(err));
           else
-            console.log('Dir correctly created:' + path);
+            logger.info('Dir correctly created:' + path);
           next();
         });
       });
@@ -42,17 +43,17 @@ function getOrCreatePod(podName, repl, shouldCreate, next) {
       if (shouldCreate) {
         components.templateForImage(repl, function(err, template, repl) {
           if(err) {
-            console.log(`#ERROR# Cannot start pod ${podName}, error in template generation: ${stringify(err)}`);
+            logger.error(`Cannot start pod ${podName}, error in template generation: ${stringify(err)}`);
             next(err, null)
           } else {
             guaranteeUserDir(repl.user, function (){
               const templateValue = yaml.safeLoad(template, 'utf8')
               k8.ns(config.k8component.namespace).pod.post({ body: templateValue}, function(err, res2){
                 if(err) {
-                  console.log(`#ERROR# Cannot start pod ${podName}, error: ${stringify(err)}, \n====\ntemplate was ${template}\n====`);
+                  logger.error(`Cannot start pod ${podName}, error: ${stringify(err)}, \n====\ntemplate was ${template}\n====`);
                   next(err, null)
                 } else {
-                  console.log(`Created pod ${podName}: ${stringify(res2)}`)
+                  logger.info(`Created pod ${podName}: ${stringify(res2)}`)
                   next(null, res2)
                 }
               })
@@ -60,11 +61,11 @@ function getOrCreatePod(podName, repl, shouldCreate, next) {
           }
         });
       } else {
-        console.log(`#ERROR# requested pod ${podName} which does not exist and should not be created, error: ${stringify(err)}`);
+        logger.error(`Requested pod ${podName} which does not exist and should not be created, error: ${stringify(err)}`);
         next(err, null)
       }          
     } else {
-      console.log(`looked up ${podName}: ${stringify(result)}`)
+      //logger.debug(`looked up ${podName}: ${stringify(result)}`)
       next(null, result)
     }
   });
@@ -103,7 +104,7 @@ function resolvePod(repl, next) {
                 host: podIp,
                 port: portNr
               }
-              console.log(`got ${stringify(res)} out of pod ${stringify(pod)}`)
+              //logger.debug(`got ${stringify(res)} out of pod ${stringify(pod)}`)
               resolveCache.set(podName, res)
               next(null, res)
             } else {
@@ -142,27 +143,26 @@ function resolvePod(repl, next) {
 ;
 // The decision could be made using the state machine instead of the
 ProxyRouter.prototype.lookup = function(req, res, userID, isWebsocket, path, next) {
-  console.log("Looking up the path! " + req.path)
   var start = Date.now()
   components.cachedReplacements(req, function(err, repl) {
-    console.log(`replacements available after ${(Date.now()-start)/1000.0}`)
+    //logger.debug(`replacements available after ${(Date.now()-start)/1000.0}s`)
     if (err) {
-      console.log(`ERROR no replacements: lookup without visiting the entry point ${config.k8component.entryPoint.path} (${stringify(err)})`)
+      logger.error(`No replacements: lookup without visiting the entry point ${config.k8component.entryPoint.path} (${stringify(err)})`)
     } else {
       resolvePod(repl, function (err, target) {
-        //console.log(`target available after ${(Date.now()-start)/1000.0}`)
+        //logger.debug(`target available after ${(Date.now()-start)/1000.0}s`)
         if (err) {
-          console.log(`ERROR ${stringify(err)}`)
           if (err.error === 'no ip' && err.status && err.status.phase === 'Pending' ||
               err.error === 'not ready') {
-            console.log(`pod ${repl.podName} ${err.error} ${stringify(err)}`)
+            logger.warn(`pod ${repl.podName} ${err.error} ${stringify(err)}`)
             res.send(reloadMsg)
           } else {
             const errorMsg = `<html><head><title>Error starting Container!</title><meta http-equiv="refresh"<body><h3>Error ${err.error} while trying to start a container for you!</h3><p>${err.msg}</p><pre>${stringify(err, { spaces: 2 } )}</pre></body></html>`;
+            logger.error(`error starting container ${repl.podName}: ${stringify(err)}`)
             res.send(500, errorMsg)
           }
         } else {
-          // console.log(`Resolved to ${stringify(target)}`)
+          // logger.debug(`Resolved to ${stringify(target)} after ${(Date.now()-start)/1000.0}s`)
           next(target);
         }
       })

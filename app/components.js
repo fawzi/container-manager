@@ -8,6 +8,8 @@ const userSettings = require('./userSettings')
 const crypto = require('crypto');
 const url = require('url');
 const compact_sha = require('./compact-sha')
+const logger = require('./logger')
+const stringify = require('json-stringify-safe')
 
 var baseRepl = {
   baseDir: baseDir,
@@ -48,7 +50,7 @@ const templateCache = require('../safe-memory-cache/map.js')({
   refreshF: function(key, value, cache) {
     loadTemplateInternal(key, function(err, t) {
       if (err) {
-        console.log(`refresh of template ${key} failed with ${JSON.stringify(err)}`)
+        logger.warn(`refresh of template ${key} failed with ${stringify(err)}`)
       } else {
         cache.set(key,t)
       }
@@ -62,7 +64,7 @@ function loadTemplate(templatePath, next) {
   if (v === undefined) {
     loadTemplateInternal(templatePath, function(err, t) {
       if (err) {
-        console.log(`template ${templatePath} loading failed with ${JSON.stringify(err)}, putting null`)
+        logger.warn(`template ${templatePath} loading failed with ${stringify(err)}, putting null`)
         templateCache.set(templatePath, null)
         next(err, null)
       } else {
@@ -84,7 +86,7 @@ function evalTemplate(templatePath, extraRepl, next) {
     } else {
       const repl = Object.assign({}, extraRepl, baseRepl)
       const res = template(repl)
-      //console.log(`evaluating <<${data}>> with ${JSON.stringify(repl)} gives <<${res}>>`)
+      //logger.debug(`evaluating <<${templatePath}>> with ${stringify(repl)} gives <<${res}>>`)
       next(null, res, repl)
     }
   })

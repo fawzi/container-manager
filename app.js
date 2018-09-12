@@ -1,12 +1,10 @@
 
 function main() {
-  var env = process.env.NODE_ENV || 'development';
   var iarg = 2
   var args = process.argv
   var cmds = []
   const usage = `node ${args[1]} [-h|--help] [--image-type [beaker|jupyter|creedo|remotevis]] [webserver|watcher]
   `
-  console.log(`Started with arguments ${JSON.stringify(args)}`)
   var imageType = undefined
   while (iarg < args.length) {
     var arg = args[iarg]
@@ -34,10 +32,13 @@ function main() {
   if (imageType)
     process.env["NODE_APP_INSTANCE"] = imageType;
   const config = require('config')
-  console.log('Using configuration', config.util.getEnv('NODE_ENV'), 'for instance',process.env["NODE_APP_INSTANCE"], JSON.stringify(config, null, 2));  
+  const logger = require('./app/logger')
+  const stringify = require('json-stringify-safe');
+  logger.info(`Started with arguments ${stringify(args)}`)
+  logger.info(`Using configuration ${config.util.getEnv('NODE_ENV')} for instance ${process.env["NODE_APP_INSTANCE"]} ${stringify(config, null, 2)}`);
   if (config.app.catchErrors) {
     process.on('uncaughtException', (err) => {
-      console.log("#ERROR# UncaughtException: " + err)
+      logger.error(`UncaughtException: ${stringify(err)}`)
     })
   }
   const watcherRequired = cmds.includes("watcher")
@@ -56,7 +57,7 @@ function main() {
     const webServer = require('./app/webserver')(config, models, cmds);
   }
   if (cmds.length == 0) {
-    console.log(`missin command:\n${usage}`)
+    logger.error(`missing command:\n${usage}`)
   }
 }
 

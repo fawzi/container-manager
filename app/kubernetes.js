@@ -16,8 +16,4 @@ if(config.k8Api.ca){
 
 const k8 = new K8Api.Core(k8options);
 
-function print(err, result) {
-  console.log(JSON.stringify(err || result, null, 2));
-}
-
 module.exports = k8

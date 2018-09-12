@@ -1,4 +1,6 @@
 module.exports = function (app, config, passport, models, ensureLoggedIn, bodyParser) {
+  const logger = require('./logger')
+
   function setJsonApiHeader() {
     return function (req, res, next) {
       res.type('application/vnd.api+json');
@@ -165,7 +167,7 @@ module.exports = function (app, config, passport, models, ensureLoggedIn, bodyPa
     var username = selfUserName(req);
     var imagetype = req.params.imagetype;
     var searchPhrase = imagetype + '-rc-' + username;
-    console.log("Searching for replication controllers: " + searchPhrase);
+    logger.debug("Searching for replication controllers: " + searchPhrase);
     k8.namespaces.replicationcontrollers.get(searchPhrase, function (err, result) {
       if (!err) {
         res.send(result);
@@ -183,7 +185,7 @@ module.exports = function (app, config, passport, models, ensureLoggedIn, bodyPa
     var loggedUsername = selfUserName(req);
     var rcUsername = rcName.split('-')[2];
     if (rcUsername && loggedUsername === rcUsername) {
-      console.log("Deleting replication controller: " + rcName);
+      logger.info("Deleting replication controller: " + rcName);
       k8.namespaces.replicationcontrollers.delete({ name: rcName, preservePods: false }, function (err, result) {
         if (!err) {
           res.send(result);
@@ -198,10 +200,10 @@ module.exports = function (app, config, passport, models, ensureLoggedIn, bodyPa
     }
   });
 
-  app.get('/notebook-edit/*', function (req, res) {
+  /*app.get('/notebook-edit/*', function (req, res) {
     const target = 'https://labdev-nomad.esc.rzg.mpg.de/beaker/#/open?uri=' + req.url.slice(14, req.url.length).replace("/", "%2F")
-    console.log(`notebook-edit redirecting to ${target}`)
+    logger.debug(`notebook-edit redirecting to ${target}`)
     res.redirect(302, target);
-  });
+  });*/
 
 }

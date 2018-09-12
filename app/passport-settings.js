@@ -1,5 +1,6 @@
 const SamlStrategy = require('passport-saml').Strategy;
 const LocalStrategy = require('passport-local').Strategy
+const logger = require('./logger')
 
 module.exports = function (passport, config) {
 
@@ -13,7 +14,7 @@ module.exports = function (passport, config) {
 
   const strategies={}
   if (config.passport.strategy === "saml") {
-    console.log(`Using saml strategy`)
+    logger.info(`Using saml strategy`)
     const samlStrategy = new SamlStrategy(
       {
         path: config.passport.saml.path,
@@ -35,19 +36,19 @@ module.exports = function (passport, config) {
     strategies['saml'] = samlStrategy
     passport.use('saml', samlStrategy);
   } else if (config.passport.strategy === "local") {
-    console.log(`Using local strategy`)
+    logger.info(`Using local strategy`)
     const localStrategy = new LocalStrategy({
       usernameField : 'username',
       passwordField : 'password',
       passReqToCallback: false
     }, function(username, password, done) {
-      console.log(`entering verification callback`)
+      logger.debug(`entering verification callback`)
       const pass = config.passport.users[username]
       if (pass === undefined) {
-        console.log(`unknonw user ${username}`)
+        logger.warn(`unknonw user ${username}`)
         return done(null, false, { message: 'Unknown user.' });
       } else if (pass == password) {
-        console.log(`successful login for ${username}`)
+        logger.debug(`successful login for ${username}`)
         return done(null, {
           id: username,
           email: username+"@nowhere",
@@ -55,7 +56,7 @@ module.exports = function (passport, config) {
           firstName: username,
           lastName: "None"})
       } else {
-        console.log(`failed login for ${username}`)
+        logger.warn(`failed login for ${username}`)
         return done(null, false, { message: 'Incorrect password.' });
       }
     })
