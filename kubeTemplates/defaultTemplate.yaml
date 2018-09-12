@@ -38,13 +38,14 @@ spec:
       httpGet:
         path: "{{healthPath}}"
         port: {{port}}
-        initialDelaySeconds: {{healthDelay}}
+      initialDelaySeconds: {{healthDelay}}
+      periodSeconds: {{healthPeriod}}
     livenessProbe:
       httpGet:
         path: "{{livePath}}"
         port: {{port}}
-        initialDelaySeconds: {{liveDelay}}
-        periodSeconds: {{livePeriod}}
+      initialDelaySeconds: {{liveDelay}}
+      periodSeconds: {{livePeriod}}
   volumes:
   - name: "parsed-data-volume"
     hostPath: { "path": "{{nomadRoot}}/parsed" }
