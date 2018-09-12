@@ -16,4 +16,10 @@
   "usersettings_redis": {
     "password": "USER_SETTINGS_DB_PASSWORD"
   }
+  "passport": {
+    "saml": {
+      "path": "SAML_PATH"
+      "entryPoint": "SAML_ENTRY_POINT"
+    }
+  }
 }

@@ -37,10 +37,10 @@ k8Api: {
 passport: {
   strategy: "saml"
   saml: {
-    path: process.env.SAML_PATH || "/login/callback"
-    entryPoint: process.env.SAML_ENTRY_POINT || "https://idp.nomad-coe.eu/idp/profile/SAML2/Redirect/SSO",
-    issuer: "https://labdev-nomad.esc.rzg.mpg.de/shibboleth",
-    identifierFormat: null,
+    path: "/login/callback"
+    entryPoint: "https://idp.nomad-coe.eu/idp/profile/SAML2/Redirect/SSO"
+    issuer: "https://labdev-nomad.esc.rzg.mpg.de/shibboleth"
+    identifierFormat: null
     acceptedClockSkewMs: -1
   }
 },
