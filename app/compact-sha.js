@@ -6,7 +6,7 @@ function sha(){
 }
 
 function compactSha(hash, prefix='o') {
-  const digest = hash.digest('base64').slice(0,28).replace('+','-').replace('/','_')
+  const digest = hash.digest('base64').slice(0,28).replace(/\+/g,'-').replace(/\//g,'_')
   return prefix + digest
 }
 
