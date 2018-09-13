@@ -2,7 +2,7 @@ k8component: {
   image: {
     imageType: beaker
     imageSubtype: default1
-    image: "labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook:v1.11.5-232-gcd982cf-dirty"
+    image: "analytics-toolkit.nomad-coe.eu:5509/nomadlab/notebook:v1.11.6-229-g19da90a7-dirty"
     port: 8801,
     prefix: "/beaker",
     homePath: "/home/beaker"
