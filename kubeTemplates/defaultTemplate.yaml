@@ -9,6 +9,8 @@ metadata:
     image-subtype: "{{imageSubtype}}"
     replacements-checksum: "{{replacementsChecksum}}"
 spec:
+  imagePullSecrets:
+  - name: garching-kube
   containers:
   - image: "{{image}}"
     name: "{{imageType}}"

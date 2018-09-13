@@ -50,7 +50,7 @@ do
           chownRoot=$1
           ;;
       *)
-          echo "usage: $0 [--debug] [--tls] [--nomad-root <pathToNomadRoot>] [--chown-root <pathForPrometheusVolumes>] [--env <NODE_ENV_VALUE>] [--docker-only] [--docker-skip] [--target-hostname hostname]"
+          echo "usage: $0 [--debug] [--tls] [--nomad-root <pathToNomadRoot>] [--chown-root <pathForPrometheusVolumes>] [--env <NODE_ENV_VALUE>] [--docker-only] [--docker-skip] [--target-hostname hostname] [--always-pull]"
           echo
           echo "Env variables: NODE_ENV, target_hostname, nomadRoot"
           echo "Examples:"
@@ -329,25 +329,38 @@ echo "  kubectl create secret docker-registry garching-kube --docker-server=anal
 echo "# get certificates to connect to kubernetes (either from kube-certs of ~/.minikube)"
 echo "  if [ -e kube-certs ] ; then"
 echo "    pushd kube-certs"
+echo "  elif [ -e ../kube-certs ] ; then"
+echo "    pushd ../kube-certs"
 echo "  elif [ -e ~/.minikube ] ; then"
 echo "    pushd  ~/.minikube"
 echo "  else"
 echo "    pushd ."
 echo "  fi"
-echo "  kubectl create secret generic kube-certs --from-file=ca.crt=ca.crt --from-file=client.crt=client.crt --from-file=client.key=client.key"
-echo "  popd"
-echo "# create secret with web certificates"
-echo "  if [ -e "web-certs" ] ; then"
-echo "    kubectl create secret generic ${secretWebCerts} --from-file=key.pem=key.pem --from-file=cert.pem=cert.pem"
-echo "  fi"
-echo "# minikube setup
-if [ -z "$KUBERNETES_SERVER_URL" -and -e "$HOME/.minikube" ] ; then
-    KUBERNETES_SERVER_URL=https://$(minikube ip):8443
+
+if [ -z "$KUBERNETES_SERVER_URL" -a -e "$HOME/.minikube" ] ; then
+    KUBERNETES_SERVER_URL="https://$(minikube ip):8443"
 fi
-if [ -z "$KUBERNETES_NODE" -and -e "$HOME/.minikube" ] ; then
-    KUBERNETES_NODE=$(minikube ip)
+if [ -z "$KUBERNETES_NODE" -a -e "$HOME/.minikube" ] ; then
+    KUBERNETES_NODE="$(minikube ip)"
 fi
 
+if [ -n "$KUBERNETES_SERVER_URL" ]; then
+    echo "  kubectl create secret generic kube-certs --from-file=ca.crt=ca.crt --from-file=client.crt=client.crt --from-file=client.key=client.key --from-literal=server.url=\"$KUBERNETES_SERVER_URL\" --from-literal=node.addr=\"$KUBERNETES_NODE\""
+else
+    echo "  kubectl create secret generic kube-certs --from-file=ca.crt=ca.crt --from-file=client.crt=client.crt --from-file=client.key=client.key --from-file=server.url=server.url --from-file=node.addr=node.addr"
+fi
+echo "  popd"
+echo "# create secret with web certificates"
+echo "  if [ -e web-certs ] ; then"
+echo "    pushd web-certs"
+echo "  elif [ -e ../web-certs ]; then"
+echo "    pushd ../web-certs"
+echo "  else"
+echo "    pushd ."
+echo "  fi"
+echo "  kubectl create secret generic ${secretWebCerts} --from-file=key.pem=key.pem --from-file=cert.pem=cert.pem"
+echo "  popd"
+echo
 
 for imageType in beaker jupyter creedo remotevis ; do
 
@@ -393,6 +406,8 @@ spec:
         app: nomad-container-manager
         imageType: $imageType
     spec:
+      imagePullSecrets:
+      - name: garching-kube
       containers:
       - name: nomad-container-manager
         image: $name
@@ -419,20 +434,16 @@ spec:
             secretKeyRef:
               name: notebook-db-mongo-pwd
               key: password
-HERE
-if [ -n "$KUBERNETES_SERVER_URL" ] ; then
-    cat >$targetF <<HERE
         - name: KUBERNETES_SERVER_URL
-          value: "$KUBERNETES_SERVER_URL"
-HERE
-fi
-if [ -n "$KUBERNETES_NODE" ] ; then
-    cat >$targetF <<HERE
+          valueFrom:
+            secretKeyRef:
+              name: kube-certs
+              key: server.url
         - name: KUBERNETES_NODE
-          value: "$KUBERNETES_NODE"
-HERE
-fi
-cat >$targetF <<HERE
+          valueFrom:
+            secretKeyRef:
+              name: kube-certs
+              key: node.addr
         - name: NODE_ENV
           value: "$NODE_ENV"
         - name: NODE_APP_INSTANCE
