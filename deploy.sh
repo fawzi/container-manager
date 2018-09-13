@@ -382,7 +382,7 @@ spec:
   type: NodePort
 HERE
 fi
-echo "  kubectl create -f container-manager-service.yaml"
+echo "  kubectl create -f container-manager-service-$imageType.yaml"
 
 if [ -n "$updateDeploy" ]; then
     targetF=container-manager-deploy-$imageType.yaml
