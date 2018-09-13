@@ -6,13 +6,14 @@
     }
     frontendAddr: "https://labdev-nomad.esc.rzg.mpg.de"
   }
-passport: {
-  strategy: "saml"
-  saml: {
-    path: "/login/callback"
-    entryPoint: "https://idp.nomad-coe.eu/idp/profile/SAML2/Redirect/SSO"
-    issuer: "https://labdev-nomad.esc.rzg.mpg.de/shibboleth"
-    identifierFormat: null
-    acceptedClockSkewMs: -1
+  passport: {
+    strategy: "saml"
+    saml: {
+      path: "/login/callback"
+      entryPoint: "https://idp.nomad-coe.eu/idp/profile/SAML2/Redirect/SSO"
+      issuer: "https://labdev-nomad.esc.rzg.mpg.de/shibboleth"
+      identifierFormat: null
+      acceptedClockSkewMs: -1
+    }
   }
 }

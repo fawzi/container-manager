@@ -22,7 +22,7 @@ do
           buildDocker=1
           updateDeploy=""
           ;;
-      --alwaysPull)
+      --always-pull)
           alwaysPull=1
           ;;
       --docker-skip)

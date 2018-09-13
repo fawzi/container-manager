@@ -21,12 +21,12 @@ module.exports = function(config, models, cmds) {
   const logger = require('./logger')
 
   var loginPrefixes = ['']
-  if (cmds.includes('apiserver'))
-    loginPrefixes.push('/userapi')
-  if (cmds.includes('webserver'))
-    loginPrefixes.push(config.k8component.image.imageType)
-
-  config.passport.saml.path = loginPrefixes[loginPrefixes.length - 1] + config.passport.saml.path
+  //if (cmds.includes('apiserver'))
+  //  loginPrefixes.push('/userapi')
+  //if (cmds.includes('webserver'))
+  //  loginPrefixes.push(config.k8component.image.imageType)
+  //
+  // config.passport.saml.path = loginPrefixes[loginPrefixes.length - 1] + config.passport.saml.path
   const strategies = require('./passport-settings')(passport, config);
 
   var app = express();

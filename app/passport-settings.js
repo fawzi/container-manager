@@ -1,6 +1,7 @@
 const SamlStrategy = require('passport-saml').Strategy;
 const LocalStrategy = require('passport-local').Strategy
 const logger = require('./logger')
+const stringify = require('json-stringify-safe');
 
 module.exports = function (passport, config) {
 
@@ -20,17 +21,23 @@ module.exports = function (passport, config) {
         path: config.passport.saml.path,
         entryPoint: config.passport.saml.entryPoint,
         issuer: config.passport.saml.issuer,
+        logoutUrl: config.passport.saml.logoutUrl,
+        logoutCallback: config.passport.saml.logoutCallback,
         identifierFormat: config.passport.saml.identifierFormat,
         acceptedClockSkewMs: -1
       },
       function (profile, done) {
+        logger.info(`profile: ${stringify(profile)}`)
         return done(null,
                     {
                       id: profile.uid,
                       email: profile.email,
                       displayName: profile.cn,
                       firstName: profile.givenName,
-                      lastName: profile.sn
+                      lastName: profile.sn,
+                      nameID: profile.nameID,
+                      nameIDFormat: profile.nameIDFormat,
+                      sessionIndex: profile.sessionIndex
                     });
       })
     strategies['saml'] = samlStrategy
