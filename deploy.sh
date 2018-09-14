@@ -208,6 +208,8 @@ rbac:
 metrics:
   enabled: true
 master:
+  service:
+    type: NodePort
   disableCommands: ""
   persistence:
     enabled: false
@@ -292,6 +294,8 @@ rbac:
 metrics:
   enabled: true
 master:
+  service:
+    type: NodePort
   disableCommands: ""
   persistence:
     enabled: true
