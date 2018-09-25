@@ -42,8 +42,6 @@ passport: {
     issuer: "https://labdev-nomad.esc.rzg.mpg.de/shibboleth"
     identifierFormat: null
     acceptedClockSkewMs: -1
-    logoutUrl: undefined
-    logoutCallback: undefined
   }
 },
 k8component: {

@@ -13,6 +13,8 @@
       entryPoint: "https://idp.nomad-coe.eu/idp/profile/SAML2/Redirect/SSO"
       issuer: "https://labdev-nomad.esc.rzg.mpg.de/shibboleth"
       identifierFormat: null
+      # logoutUrl: "https://idp.nomad-coe.eu/idp/profile/SAML2/Redirect/SSO"
+      # logoutCallback: undefined
       acceptedClockSkewMs: -1
     }
   }

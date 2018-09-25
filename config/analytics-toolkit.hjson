@@ -6,4 +6,23 @@
     }
     frontendAddr: "https://analytics-toolkit.nomad-coe.eu"
   }
+  passport: {
+    strategy: "saml"
+    saml: {
+      path: "/login/callback"
+      entryPoint: "https://idp.nomad-coe.eu/idp/profile/SAML2/Redirect/SSO"
+      issuer: "https://analytics-toolkit.nomad-coe.eu/shibboleth"
+      identifierFormat: null
+      # logoutUrl: "https://idp.nomad-coe.eu/idp/profile/SAML2/Redirect/SSO"
+      # logoutCallback: undefined
+      acceptedClockSkewMs: -1
+    }
+  }
+  mongoDb: {
+    url: "mongodb://notebook-info-db-mongodb/filedatabase"
+  }
+  session_redis: {
+     port: 6390,
+     host: 'analytics-toolkit.nomad-coe.eu'
+  }
 }
