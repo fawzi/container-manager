@@ -50,7 +50,7 @@ function getOrCreatePod(podName, repl, shouldCreate, next) {
               const templateValue = yaml.safeLoad(template, 'utf8')
               k8.ns(config.k8component.namespace).pod.post({ body: templateValue}, function(err, res2){
                 if(err) {
-                  logger.error(`Cannot start pod ${podName}, error: ${stringify(err)}, \n====\ntemplate was ${template}\n====`);
+                  logger.error(`Cannot start pod ${podName}, error: ${stringify(err)}, \n====\ntemplate was ${template}\n====\nexpanded to\n${templateValue}\n====`);
                   next(err, null)
                 } else {
                   logger.info(`Created pod ${podName}: ${stringify(res2)}`)
@@ -157,7 +157,7 @@ ProxyRouter.prototype.lookup = function(req, res, userID, isWebsocket, path, nex
             logger.warn(`pod ${repl.podName} ${err.error} ${stringify(err)}`)
             res.send(reloadMsg)
           } else {
-            const errorMsg = `<html><head><title>Error starting Container!</title><meta http-equiv="refresh"<body><h3>Error ${err.error} while trying to start a container for you!</h3><p>${err.msg}</p><pre>${stringify(err, { spaces: 2 } )}</pre></body></html>`;
+            const errorMsg = `<html><head><title>Error starting Container!</title><meta http-equiv="refresh"<body><h3>Error ${err.error} while trying to start a container for you!</h3><p>${err.msg}</p><pre>${stringify(err, nil, 2 )}</pre></body></html>`;
             logger.error(`error starting container ${repl.podName}: ${stringify(err)}`)
             res.send(500, errorMsg)
           }
