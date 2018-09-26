@@ -1,0 +1,65 @@
+---
+apiVersion: "v1"
+kind: Pod
+metadata:
+  name: "{{podName}}"
+  labels:
+    user: "{{user}}"
+    image-type: "{{imageType}}"
+    image-subtype: "{{imageSubtype}}"
+    replacements-checksum: "{{replacementsChecksum}}"
+spec:
+  imagePullSecrets:
+  - name: garching-kube
+  containers:
+  - image: "{{image}}"
+    name: "{{imageType}}"
+    command: ["start-notebook.sh"]
+    args: ["--NotebookApp.base_url=/jupyter"]
+    ports:
+    - containerPort: {{port}}
+      name: "main-port"
+      protocol: "TCP"
+    imagePullPolicy: "IfNotPresent"
+    volumeMounts:
+    - mountPath: "/raw-data"
+      name: "raw-data-volume"
+      readOnly: true
+    - mountPath: "/parsed"
+      name: "parsed-data-volume"
+      readOnly: true
+    - mountPath: "/normalized"
+      name: "normalized-data-volume"
+      readOnly: true
+    - mountPath: "/data/private/{{user}}"
+      name: "private-data-volume"
+    - mountPath: "/data/shared"
+      name: "shared-data-volume"
+      readOnly: true
+    - mountPath: "/data/shared/{{user}}"
+      name: "my-shared-data-volume"
+    readinessProbe:
+      httpGet:
+        path: "{{healthPath}}"
+        port: {{port}}
+      initialDelaySeconds: {{healthDelay}}
+      periodSeconds: {{healthPeriod}}
+    livenessProbe:
+      httpGet:
+        path: "{{livePath}}"
+        port: {{port}}
+      initialDelaySeconds: {{liveDelay}}
+      periodSeconds: {{livePeriod}}
+  volumes:
+  - name: "parsed-data-volume"
+    hostPath: { "path": "{{nomadRoot}}/parsed" }
+  - name: "raw-data-volume"
+    hostPath: { "path": "{{nomadRoot}}/raw-data"}
+  - name: "normalized-data-volume"
+    hostPath: { "path": "{{nomadRoot}}/normalized" }
+  - name: "private-data-volume"
+    hostPath: { "path": "{{nomadRoot}}/user-data/private/{{user}}" }
+  - name: "shared-data-volume"
+    hostPath: { "path": "{{nomadRoot}}/user-data/shared" }
+  - name: "my-shared-data-volume"
+    hostPath: { "path": "{{nomadRoot}}/user-data/shared/{{user}}" }
