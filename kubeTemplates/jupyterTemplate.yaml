@@ -15,7 +15,7 @@ spec:
   - image: "{{image}}"
     name: "{{imageType}}"
     command: ["start-notebook.sh"]
-    args: ["--NotebookApp.base_url=/jupyter"]
+    args: ["--NotebookApp.token=\"\"",  "--NotebookApp.base_url=/jupyter", "--NotebookApp.allow_origin=*", "--NotebookApp.notebook_dir=/data"]
     ports:
     - containerPort: {{port}}
       name: "main-port"
@@ -31,7 +31,7 @@ spec:
     - mountPath: "/normalized"
       name: "normalized-data-volume"
       readOnly: true
-    - mountPath: "/data/private/{{user}}"
+    - mountPath: "/data/private"
       name: "private-data-volume"
     - mountPath: "/data/shared"
       name: "shared-data-volume"
