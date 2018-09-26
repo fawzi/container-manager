@@ -92,6 +92,71 @@ function evalTemplate(templatePath, extraRepl, next) {
   })
 }
 
+// evaluates a template, here only the most basic replacements are given, you normally need to pass in extraRepl.
+// calls next with the resolved template plus all replacements defined
+function evalTemplate(templatePath, extraRepl, next) {
+  loadTemplate(templatePath, function (err, template) {
+    if (err) {
+      next(err, null, undefined)
+    } else {
+      const repl = Object.assign({}, extraRepl, baseRepl)
+      const res = template(repl)
+      //logger.debug(`evaluating <<${templatePath}>> with ${stringify(repl)} gives <<${res}>>`)
+      next(null, res, repl)
+    }
+  })
+}
+
+// Immediately returns an html describing the error
+function getHtmlErrorTemplate(err, context = '') {
+  let error = '', error_msg = '', error_detail = ''
+  if (!err) {
+    try {
+      error_detail = stringify(err, null, 2)
+      error = err.error || ''
+      error_msg = error.message || ''
+    } catch(e) {
+    }
+    return `<!doctype html>
+      <html>
+      <head>
+      <title>Error ${error}</title>
+      <meta charset="utf-8" />
+      </head>
+      <body>
+      <h1>Error ${error}</h1>
+      <h2>context</h2>
+      <p>
+      ${error_msg}
+      </p>
+      <pre>
+      ${error_detail}
+      </pre>
+      </body>
+      </html>`
+  }
+}
+
+// Helper to evaluate a web page template (layout + content)
+// will *always* give an html as result (it there was an error it describe the error
+function evalHtmlTemplate(htmlPath, repl, next, layout = null, context = '') {
+  const layout = repl.layout || "defaultTemplate.html"
+  evalTemplate("html/"+htmlPath, repl, function (err, template){
+    if (err) {
+      next(err, getHtmlErrorTemplate(err, context))
+    } else {
+      const repl2 = Object.assign({title: htmlPath, head: ''}, repl, { body: template })
+      evalHtmlTemplate("html/"+layout, repl2, function(err,res){
+        if (err) {
+          next(err, getHtmlErrorTemplate(err, context))
+        } else {
+          next(nil, res)
+        }
+      })
+    }
+  })
+}
+
 function namespaceTemplate(name, next) {
   evalTemplate("kube/namespace.yaml", { namespace: name }, next)
 }
