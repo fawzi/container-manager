@@ -32,7 +32,7 @@ baseRepl['commands'] = templatize(cconfig.commands.path)(baseRepl)
 
 // Given a path loads it and compiles a template for it, use loadTemplate that has caching
 function loadTemplateInternal(templatePath, next) {
-  const templateRealPath = path.join(templatesDir, templatePath || "defaultTemplate.yaml")
+  const templateRealPath = path.join(templatesDir, templatePath || "kube/defaultTemplate.yaml")
   fs.readFile(templateRealPath, 'utf8', function(err, data) {
     if (err) {
       err.message = err.message + ` loading ${templateRealPath}`
@@ -93,7 +93,7 @@ function evalTemplate(templatePath, extraRepl, next) {
 }
 
 function namespaceTemplate(name, next) {
-  evalTemplate("namespace.yaml", { namespace: name }, next)
+  evalTemplate("kube/namespace.yaml", { namespace: name }, next)
 }
 
 /// returns a short session ID from a long session id

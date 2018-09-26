@@ -11,7 +11,7 @@ app: {
   frontendAddr: "http://127.0.0.1:4200"
   baseUri: "http://127.0.0.1"
   catchErrors: false
-  templatesDir: "{{baseDir}}/kubeTemplates"
+  templatesDir: "{{baseDir}}/templates"
   baseReplacements: {
     nomadRoot: "/nomad/nomadlab"
   }
@@ -49,7 +49,7 @@ k8component: {
   templateCacheNMax: 20
   templateCacheTtlMaxMs: 30000
   namespace: "analytics"
-  templatePath: "defaultTemplate.yaml"
+  templatePath: "kube/defaultTemplate.yaml"
   keysToProtect: ["keysToProtect", "keysToSkip"]
   keysToSkip: ["templateCacheTtlMaxMs", "templateCacheNMax", "keysToSkip", "keysToProtect", "images", "entryPoint", "commands"]
   image: {

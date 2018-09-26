@@ -6,6 +6,6 @@ k8component: {
     port: 8809,
     prefix: "/jupyter",
     homePath: "/home/beaker"
-    templatePath: "remoteVisTemplate.yaml"
+    templatePath: "kube/remoteVisTemplate.yaml"
   }
 }
