@@ -2,6 +2,7 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
   const components = require('../app/components')
   const logger = require('./logger')
   const stringify = require('json-stringify-safe')
+  const k8D = require('./k8-data')
 
   function setFrontendHeader() {
     return function(req, res, next) {
@@ -58,7 +59,29 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
     })
   });
 
-  const commandsBase = components.templatize(cconf.commands.path)(components.templatize)
+  const commandsBase = components.templatize(cconf.commands.path)
+
+  app.get(commandsBase + "/viewContainers", ensureLoggedIn('/login'), bodyParser.urlencoded({extended: true}), function(req, res){
+    let user = selfUserName(req)
+    var selectors
+    if (req.body.all && req.body.all !== 'false')
+      selectors = { user: user }
+    else
+      selectors = { user: user, "image-type": config.k8component.image.imageType }
+    k8D.getPods(selectors, function(err, pods) {
+      if (err) {
+        res.send(getHtmlErrorTemplate(err, "Viewing running containers"))
+      } else {
+        evalHtmlTemplate(
+          "html/viewContainers.html",
+          {
+            pods: stringify(pods)
+          }, function (err, page) {
+            res.send(page)
+          })
+      }
+    })
+  })
 
   app.post(commandsBase + "/stop", ensureLoggedIn('/login'), function(req, res){
     
