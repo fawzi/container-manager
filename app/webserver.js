@@ -31,8 +31,7 @@ module.exports = function(config, models, cmds) {
 
   var app = express();
 
-  const env = process.env["NODE_ENV"] || 'development'
-  if (env === 'development' || env === 'localSetup') {
+  if (config.app.debug) {
     // only use in development
     app.use(errorHandler())
     app.use(morgan('combined'));

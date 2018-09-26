@@ -15,6 +15,7 @@ app: {
   baseReplacements: {
     nomadRoot: "/nomad/nomadlab"
   }
+  debug: false
 }
 mongoDb: {
   url: "mongodb://notebook-info-db-mongodb/filedatabase"

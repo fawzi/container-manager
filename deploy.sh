@@ -50,7 +50,7 @@ do
           chownRoot=$1
           ;;
       *)
-          echo "usage: $0 [--debug] [--tls] [--nomad-root <pathToNomadRoot>] [--chown-root <pathForPrometheusVolumes>] [--env <NODE_ENV_VALUE>] [--docker-only] [--docker-skip] [--target-hostname hostname] [--always-pull]"
+          echo "usage: $0 [--debug] [--tls] [--nomad-root <pathToNomadRoot>] [--chown-root <pathForPrometheusVolumes>] [--env <NODE_ENV_VALUE>] [--docker-only] [--docker-skip] [--target-hostname hostname] [--secret-web-certs <secretName>]  [--always-pull]"
           echo
           echo "Env variables: NODE_ENV, target_hostname, nomadRoot"
           echo "Examples:"

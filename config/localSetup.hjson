@@ -21,4 +21,5 @@ app: {
   baseReplacements: {
     nomadRoot: "/hosthome/mohamed/nomadlab"
   }
+  debug: true
 }
