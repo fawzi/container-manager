@@ -15,7 +15,7 @@ spec:
   - image: "{{image}}"
     name: "{{imageType}}"
     command: ["start-notebook.sh"]
-    args: ["--NotebookApp.token=\"\"",  "--NotebookApp.base_url=/jupyter", "--NotebookApp.allow_origin=*", "--NotebookApp.notebook_dir=/data"]
+    args: ["--NotebookApp.token=\"\"",  "--NotebookApp.base_url=/jupyter", "--NotebookApp.allow_origin=*", "--NotebookApp.notebook_dir=/data/private/"]
     ports:
     - containerPort: {{port}}
       name: "main-port"
