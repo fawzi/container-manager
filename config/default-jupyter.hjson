@@ -1,10 +1,25 @@
 k8component: {
+  templatePath: "jupyterTemplate.yaml"
   image: {
     name: jupyter
-    subtype: default1
-    image: "labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook-jupyter-libatoms-tutorial:v0.4",
+    imageType: jupyter
+    imageSubtype: default1
+    subType: default1 
+    image: "analytics-toolkit.nomad-coe.eu:5509/nomadlab/jupyter-image:0.999"
     port: 8888,
     prefix: "/jupyter",
     homePath: "/home/beaker"
+    healthPath: "/jupyter"
+    healthDelay: 2
+    healthPeriod: 10
+    livePath: "/jupyter"
+    liveDelay: 15
+    livePeriod: 30
   }
+  "entryPoint": {
+    "path": "/jupyter/entrypoint"
+    "uriRe": "/jupyter(/.*)",
+    "redirectTarget": "{{baseUri}}/jupyter/tree?",
+    "exclusiveStartPoint": false
+  },
 }
