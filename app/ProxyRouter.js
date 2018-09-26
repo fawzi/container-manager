@@ -157,7 +157,7 @@ ProxyRouter.prototype.lookup = function(req, res, userID, isWebsocket, path, nex
             logger.warn(`pod ${repl.podName} ${err.error} ${stringify(err)}`)
             res.send(reloadMsg)
           } else {
-            const errorMsg = `<html><head><title>Error starting Container!</title><meta http-equiv="refresh"<body><h3>Error ${err.error} while trying to start a container for you!</h3><p>${err.msg}</p><pre>${stringify(err, nil, 2 )}</pre></body></html>`;
+            const errorMsg = `<html><head><title>Error starting Container!</title><meta http-equiv="refresh"<body><h3>Error ${err.error} while trying to start a container for you!</h3><p>${err.msg}</p><pre>${stringify(err, null, 2 )}</pre></body></html>`;
             logger.error(`error starting container ${repl.podName}: ${stringify(err)}`)
             res.send(500, errorMsg)
           }
