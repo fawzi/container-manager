@@ -164,10 +164,11 @@ function namespaceTemplate(name, next) {
 /// returns a short session ID from a long session id
 function shortSession(sessionID) {
   const hash = crypto.createHash('sha512');
-  hash.update(req.sessionID)
+  hash.update(sessionID)
   // lowercase base32 would be better...
   return hash.digest('hex').slice(0,20).toLowerCase()
 }
+
 
 /// returns the name of the pod for the given replacements
 function podNameForRepl(repl) {
