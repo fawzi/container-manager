@@ -36,7 +36,7 @@ function main() {
   const stringify = require('json-stringify-safe');
   logger.info(`Started with arguments ${stringify(args)}`)
   logger.info(`Using configuration ${config.util.getEnv('NODE_ENV')} for instance ${process.env["NODE_APP_INSTANCE"]} ${stringify(config, null, 2)}`);
-  if (config.app.catchErrors) {
+  if (config.app.catchErrors || config.app.debug) {
     process.on('uncaughtException', (err) => {
       logger.error(`UncaughtException: ${stringify(err)}`)
     })

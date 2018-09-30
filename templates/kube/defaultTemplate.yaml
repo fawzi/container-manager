@@ -11,6 +11,7 @@ metadata:
 spec:
   imagePullSecrets:
   - name: garching-kube
+  restartPolicy: Never
   containers:
   - image: "{{image}}"
     name: "{{imageType}}"

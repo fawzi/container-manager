@@ -10,6 +10,7 @@ const url = require('url');
 const compact_sha = require('./compact-sha')
 const logger = require('./logger')
 const stringify = require('json-stringify-safe')
+const yaml = require('js-yaml')
 
 var baseRepl = {
   baseDir: baseDir,
@@ -139,20 +140,37 @@ function getHtmlErrorTemplate(err, context = '') {
 
 // Helper to evaluate a web page template (layout + content)
 // will *always* give an html as result (it there was an error it describe the error
-function evalHtmlTemplate(htmlPath, repl, next, layout = null, context = '') {
-  const layout = repl.layout || "defaultTemplate.html"
-  evalTemplate("html/"+htmlPath, repl, function (err, template){
+function evalHtmlTemplate(htmlPath, repl, next, { context = '' } = {} ) {
+  logger.debug('entered evalHtmlTemplate')
+  logger.debug(`entering evalHtmlTemplate(${stringify(htmlPath)}, ${stringify(repl)},...)`)
+  evalTemplate('html/'+htmlPath, repl, function (err, template){
+    logger.debug(`eval internal template err:${stringify(err)}, body:${stringify(template)}`)
     if (err) {
+      logger.debug(`returning error`)
       next(err, getHtmlErrorTemplate(err, context))
     } else {
-      const repl2 = Object.assign({title: htmlPath, head: ''}, repl, { body: template })
-      evalHtmlTemplate("html/"+layout, repl2, function(err,res){
-        if (err) {
-          next(err, getHtmlErrorTemplate(err, context))
-        } else {
-          next(nil, res)
-        }
-      })
+      let extraRepl = {}
+      let templateBody = template
+      let m = /\B---\B/.exec(template)
+      if (m) {
+        templateBody = template.slice(m.index + 3)
+        extraRepl = yaml.safeLoad(template.slice(0, m.index), 'utf8')
+      }
+      logger.debug(`eval layout with extraRepl: ${stringify(extraRepl)} templateBody: ${stringify(templateBody)}`)
+      const repl2 = Object.assign({title: htmlPath, head: '', layout: "defaultLayout.html"}, extraRepl, repl, { body: templateBody })
+      const layout = repl2.layout
+      if (layout) {
+        evalTemplate("htmlLayout/"+layout, repl2, function(err,res){
+          logger.debug(`evaluated template, err: ${stringify(err)}`)
+          if (err) {
+            next(err, getHtmlErrorTemplate(err, context))
+          } else {
+            next(nil, res)
+          }
+        })
+      } else {
+        next(nil, templateBody)
+      }
     }
   })
 }
@@ -276,5 +294,7 @@ module.exports = {
   cachedReplacements: cachedReplacements,
   podNameForRepl: podNameForRepl,
   infoForPodName: infoForPodName,
-  templateForImage: templateForImage
+  templateForImage: templateForImage,
+  getHtmlErrorTemplate: getHtmlErrorTemplate,
+  evalHtmlTemplate: evalHtmlTemplate
 }

@@ -38,9 +38,11 @@ function guaranteeUserDir(userID, next) {
 
 /// functions that either gives the running pod or starts it
 function getOrCreatePod(podName, repl, shouldCreate, next) {
+  logger.debug(`enter getOrCreatePod ${podName}`)
   k8.ns(config.k8component.namespace).pod.get(podName, function(err, result) {
     if(err) {
       if (shouldCreate) {
+        logger.debug(`creating ${podName}`)
         components.templateForImage(repl, function(err, template, repl) {
           if(err) {
             logger.error(`Cannot start pod ${podName}, error in template generation: ${stringify(err)}`);
@@ -49,8 +51,9 @@ function getOrCreatePod(podName, repl, shouldCreate, next) {
             guaranteeUserDir(repl.user, function (){
               const templateValue = yaml.safeLoad(template, 'utf8')
               k8.ns(config.k8component.namespace).pod.post({ body: templateValue}, function(err, res2){
+                logger.debug(`created ${podName}`)
                 if(err) {
-                  logger.error(`Cannot start pod ${podName}, error: ${stringify(err)}, \n====\ntemplate was ${template}\n====\nexpanded to\n${templateValue}\n====`);
+                  logger.error(`Cannot start pod ${podName}, error: ${stringify(err)}, \n====\ntemplate was ${template}\n====\nconverted to\n${templateValue}\n====`);
                   next(err, null)
                 } else {
                   logger.info(`Created pod ${podName}: ${stringify(res2)}`)
@@ -73,8 +76,8 @@ function getOrCreatePod(podName, repl, shouldCreate, next) {
   
 // cache pod name -> host & port
 const resolveCache = require('../safe-memory-cache/map.js')({
-  limit: config.resolveCacheNMax,
-  maxTTL: config.resolveCacheTtlMaxMs,
+  limit: config.app.resolveCacheNMax,
+  maxTTL: config.app.resolveCacheTtlMaxMs,
   refreshF: function(key, value, cache) {
   }
 })
@@ -108,22 +111,28 @@ function resolvePod(repl, next) {
               resolveCache.set(podName, res)
               next(null, res)
             } else {
+              let secondsSinceCreation = (Date.parse(pod.metadata.creationTimestamp) - Date.now())/ 1000.0
               const err = {
                 error: "not ready",
                 msg: "pod not yet ready",
                 status: pod.status,
                 host: podIp,
-                port: portNr
+                port: portNr,
+                pod: pod,
+                secondsSinceCreation: secondsSinceCreation
               }
               next(err, null)
             }
           } else {
+            let secondsSinceCreation = (Date.parse(pod.metadata.creationTimestamp) - Date.now())/ 1000.0
             const err = {
               error: "no ip",
               msg: "ip not yet available",
               status: pod.status,
               host: podIp,
-              port: portNr
+              port: portNr,
+              pod: pod,
+              secondsSinceCreation: secondsSinceCreation
             }
             next(err, null)
           }
@@ -145,24 +154,40 @@ function resolvePod(repl, next) {
 ProxyRouter.prototype.lookup = function(req, res, userID, isWebsocket, path, next) {
   var start = Date.now()
   components.cachedReplacements(req, function(err, repl) {
-    //logger.debug(`replacements available after ${(Date.now()-start)/1000.0}s`)
+    logger.debug(`replacements available after ${(Date.now()-start)/1000.0}s`)
     if (err) {
-      logger.error(`No replacements: lookup without visiting the entry point ${config.k8component.entryPoint.path} (${stringify(err)})`)
+      logger.error(`no replacements for ${userID} in %{path}`)
+      res.send(500, components.getHtmlErrorTemplate({
+        error:"No replacements",
+        msg: `lookup without visiting the entry point ${config.k8component.entryPoint.path} (${stringify(err)})`
+      }))
     } else {
       resolvePod(repl, function (err, target) {
-        //logger.debug(`target available after ${(Date.now()-start)/1000.0}s`)
+        logger.debug(`target available after ${(Date.now()-start)/1000.0}s, err: ${stringify(err)} target: ${stringify(target)}`)
         if (err) {
-          if (err.error === 'no ip' && err.status && err.status.phase === 'Pending' ||
-              err.error === 'not ready') {
-            logger.warn(`pod ${repl.podName} ${err.error} ${stringify(err)}`)
-            res.send(reloadMsg)
+          if ((err.error === 'no ip' || err.error === 'not ready') &&
+              err.status && err.status.phase === 'Pending') {
+            let error_detail = ''
+            if (!err.secondsSinceCreation || err.secondsSinceCreation > 10)
+              error_detail = stringify(err, null, 2)
+            logger.debug(`eval reload`)
+            let repl = {
+              refreshEachS: config.app.pageReloadTime,
+              error_detail: error_detail
+            }
+            logger.debug(`repl done ${stringify(repl)}`)
+            components.evalHtmlTemplate(
+              'reloadMsg.html', repl,
+               function(err, pageHtml) {
+                 res.send(pageHtml)
+               })
+            return;
           } else {
-            const errorMsg = `<html><head><title>Error starting Container!</title><meta http-equiv="refresh"<body><h3>Error ${err.error} while trying to start a container for you!</h3><p>${err.msg}</p><pre>${stringify(err, null, 2 )}</pre></body></html>`;
             logger.error(`error starting container ${repl.podName}: ${stringify(err)}`)
-            res.send(500, errorMsg)
+            res.send(500, components.getHtmlErrorTemplate(err, "Error starting container"))
           }
         } else {
-          // logger.debug(`Resolved to ${stringify(target)} after ${(Date.now()-start)/1000.0}s`)
+          logger.debug(`Resolved to ${stringify(target)} after ${(Date.now()-start)/1000.0}s`)
           next(target);
         }
       })
