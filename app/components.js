@@ -185,7 +185,7 @@ function podNameForRepl(repl) {
 /// returns the keys (user,...) for the given pod name
 function infoForPodName(podName) {
   const imageType = podName.slice(0,podName.indexOf('-'))
-  const imageSubtype = podName.slice(podName.lastIndexOf('-'), podName.length)
+  const imageSubtype = podName.slice(podName.lastIndexOf('-') + 1, podName.length)
   const user = podName.slice(imageType.length + 1, podName.length - imageSubtype.length - 1)
   return {
     imageType: imageType,
