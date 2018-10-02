@@ -73,8 +73,8 @@ function getOrCreatePod(podName, repl, shouldCreate, next) {
   
 // cache pod name -> host & port
 const resolveCache = require('../safe-memory-cache/map.js')({
-  limit: config.resolveCacheNMax,
-  maxTTL: config.resolveCacheTtlMaxMs,
+  limit: config.app.resolveCacheNMax,
+  maxTTL: config.app.resolveCacheTtlMaxMs,
   refreshF: function(key, value, cache) {
   }
 })
