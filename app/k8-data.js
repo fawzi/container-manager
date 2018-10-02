@@ -1,7 +1,8 @@
+const config = require('config')
 const k8 = require('./kubernetes');
 
 // gets pods with the given labels
-function getPods(labels, next) {
+exports.getPods = function(labels, next) {
   let selector = ""
   let first = true
   for (k in labels) {
@@ -11,5 +12,5 @@ function getPods(labels, next) {
       selector += ','
     selector += `${k}=${labels[k]}`
   }
-  k8.ns(config.k8component.namespace).pods({ qs: { labelSelector: selector } }, next)
+  k8.ns(config.k8component.namespace).pods.get({ qs: { labelSelector: selector } }, next)
 }
