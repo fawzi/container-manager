@@ -1,4 +1,4 @@
-config = require('config')
+const config = require('config')
 const handlebars = require('handlebars');
 const fs = require('fs');
 const path = require('path');
@@ -10,6 +10,7 @@ const url = require('url');
 const compact_sha = require('./compact-sha')
 const logger = require('./logger')
 const stringify = require('json-stringify-safe')
+const yaml = require('js-yaml')
 
 var baseRepl = {
   baseDir: baseDir,
@@ -18,7 +19,15 @@ var baseRepl = {
 };
 const br = config.app.baseReplacements
 for (k in br)
-   baseRepl[k] = br[k];
+  baseRepl[k] = br[k];
+
+handlebars.registerHelper('json', function(object){
+        return new Handlebars.SafeString(stringify(object));
+});
+
+handlebars.registerHelper('prettyJson', function(object){
+  return stringify(object, null, 2);
+});
 
 // Create a template from the given string
 function templatize(str) {
@@ -110,7 +119,7 @@ function evalTemplate(templatePath, extraRepl, next) {
 // Immediately returns an html describing the error
 function getHtmlErrorTemplate(err, context = '') {
   let error = '', error_msg = '', error_detail = ''
-  if (!err) {
+  if (err) {
     try {
       error_detail = stringify(err, null, 2)
       error = err.error || ''
@@ -134,25 +143,40 @@ function getHtmlErrorTemplate(err, context = '') {
       </pre>
       </body>
       </html>`
+  } else {
+    return ''
   }
 }
 
 // Helper to evaluate a web page template (layout + content)
 // will *always* give an html as result (it there was an error it describe the error
-function evalHtmlTemplate(htmlPath, repl, next, layout = null, context = '') {
-  const layout = repl.layout || "defaultTemplate.html"
-  evalTemplate("html/"+htmlPath, repl, function (err, template){
+function evalHtmlTemplate(htmlPath, repl, next, { context = '' } = {} ) {
+  //logger.debug(`entering evalHtmlTemplate(${stringify(htmlPath)}, ${stringify(repl)},...)`)
+  evalTemplate('html/'+htmlPath, repl, function (err, template){
     if (err) {
+      logger.warn(`evalTemplate ${htmlPath} returning error ${stringify(err)}`)
       next(err, getHtmlErrorTemplate(err, context))
     } else {
-      const repl2 = Object.assign({title: htmlPath, head: ''}, repl, { body: template })
-      evalHtmlTemplate("html/"+layout, repl2, function(err,res){
-        if (err) {
-          next(err, getHtmlErrorTemplate(err, context))
-        } else {
-          next(nil, res)
-        }
-      })
+      let extraRepl = {}
+      let templateBody = template
+      let m = /\B---\B/.exec(template)
+      if (m) {
+        templateBody = template.slice(m.index + 3)
+        extraRepl = yaml.safeLoad(template.slice(0, m.index), 'utf8')
+      }
+      const repl2 = Object.assign({title: htmlPath, head: '', layout: "defaultLayout.html"}, extraRepl, repl, { body: templateBody })
+      const layout = repl2.layout
+      if (layout) {
+        evalTemplate("htmlLayout/"+layout, repl2, function(err,res){
+          if (err) {
+            next(err, getHtmlErrorTemplate(err, context))
+          } else {
+            next(null, res)
+          }
+        })
+      } else {
+        next(null, templateBody)
+      }
     }
   })
 }
@@ -276,5 +300,7 @@ module.exports = {
   cachedReplacements: cachedReplacements,
   podNameForRepl: podNameForRepl,
   infoForPodName: infoForPodName,
-  templateForImage: templateForImage
+  templateForImage: templateForImage,
+  getHtmlErrorTemplate: getHtmlErrorTemplate,
+  evalHtmlTemplate: evalHtmlTemplate
 }
