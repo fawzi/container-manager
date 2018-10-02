@@ -40,7 +40,7 @@ function getOrCreatePod(podName, repl, shouldCreate, next) {
   k8.ns(config.k8component.namespace).pod.get(podName, function(err, result) {
     if(err) {
       if (shouldCreate) {
-        logger.debug(`creating ${podName}`)
+        logger.info(`creating ${podName}`)
         components.templateForImage(repl, function(err, template, repl) {
           if(err) {
             logger.error(`Cannot start pod ${podName}, error in template generation: ${stringify(err)}`);
