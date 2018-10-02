@@ -1,1 +1,41 @@
-<pre>{{pods}}</pre>
+title: "Active Containers"
+---
+<h1>Active Containers</h1>
+
+<div class="alert alert-primary" role="alert" id="msgs">
+</div>
+
+<script type="text/javascript">
+ function deleteContainer(cName) {
+   const xhttp = new XMLHttpRequest();
+   xhttp.responseType = 'json'
+   xhttp.onreadystatechange = function() {
+     if (this.readyState == 4) {
+       if (this.response && this.response.data)
+         document.getElementById("msgs").innerHTML = 'successful delete';
+       else
+         document.getElementById("msgs").innerHTML = 'delete error: '+JSON.stringify(this.response);
+     }
+   };
+
+   xhttp.open("DELETE", "container/"+cName, true);
+   xhttp.setRequestHeader('content-type','application/json')
+   xhttp.send(JSON.stringify({name:cName}));
+ }
+</script>
+
+{{#each pods as |pod|}}
+<div class="alery alert-{{pod.status}}" role="alert" >
+  <a class="" data-toggle="collapse" href="#detail{{pod.name}}" aria-expanded="false" aria-controls="detail{{pod.name}}">
+    {{pod.name}}
+  </a> ({{pod.time}})
+  <button type="button" class="btn btn-default btn-sm" onclick="deleteContainer('{{pod.name}}');">
+    Delete
+  </button>
+  <div class="collapse" id="detail{{pod.name}}">
+    <div class="card card-block">
+      <pre>{{prettyJson pod.detail}}</pre>
+    </div>
+  </div>
+</div>
+{{/each}}

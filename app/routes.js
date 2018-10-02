@@ -59,10 +59,10 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
     })
   });
 
-  const commandsBase = components.templatize(cconf.commands.path)
+  const commandsBase = components.templatize(cconf.commands.path)(components.baseRepl)
 
-  app.get(commandsBase + "/viewContainers", ensureLoggedIn('/login'), bodyParser.urlencoded({extended: true}), function(req, res){
-    let user = selfUserName(req)
+  app.get(commandsBase + "/view-containers", ensureLoggedIn('/login'), bodyParser.urlencoded({extended: true}), function(req, res){
+    let user = components.selfUserName(req)
     var selectors
     if (req.body.all && req.body.all !== 'false')
       selectors = { user: user }
@@ -72,10 +72,54 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
       if (err) {
         res.send(getHtmlErrorTemplate(err, "Viewing running containers"))
       } else {
-        evalHtmlTemplate(
-          "html/viewContainers.html",
+        let podList = pods.items
+        if (podList)
+          podList = podList.map(function(pod){
+            let secondsSinceCreation = (Date.now() - Date.parse(pod.metadata.creationTimestamp))/ 1000.0
+            let time = secondsSinceCreation
+            let unit = "s"
+            if (time > 60) {
+              time = time / 60.0
+              unit = "m"
+              if (time > 60) {
+                time = time / 60.0
+                unit = "h"
+                if (time > 24) {
+                  time = time / 24.0
+                  unit = "d"
+                }
+              }
+            }
+            let status = "danger"
+            if (pod.status && pod.status.phase === 'Pending') {
+              status = "warning"
+            } else if (pod.status && pod.status.phase === 'Running') {
+              const conds = pod.status.conditions
+              let ready = false
+              if (pod.status && conds) {
+                for (icond in conds) {
+                  let cond = conds[icond]
+                  if (cond.type === 'Ready' && cond.status === 'True')
+                    ready = true
+                }
+                if (ready)
+                  status = "success"
+                else
+                  status = "warning"
+              }
+            }
+            
+            return {
+              name: pod.metadata.name,
+              time: `${time.toFixed(1)} ${unit}`,
+              status: status,
+              detail: pod
+            }
+          })
+        components.evalHtmlTemplate(
+          "viewContainers.html",
           {
-            pods: stringify(pods)
+            pods: podList
           }, function (err, page) {
             res.send(page)
           })
@@ -83,14 +127,78 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
     })
   })
 
-  app.post(commandsBase + "/stop", ensureLoggedIn('/login'), function(req, res){
-    
+  app.get(commandsBase + "/container/:podname", ensureLoggedIn('/login'), bodyParser.json(), function(req, res){
+    var loggedUsername = components.selfUserName(req);
+    var podName = req.params.podname;
+    var podInfo = components.infoForPodName(podName)
+    if (podInfo.user && loggedUsername === podInfo.user) {
+      k8.ns(config.k8component.namespace).pods.get({ name: podName }, function (err, result) {
+        if (!err) {
+          res.type('application/vnd.api+json').json({data:{ id: podName,
+                                     type: 'pod',
+                                     attributes: {
+                                       data: result
+                                     }
+                                   }
+                             }, null, 2);
+        } else res.type('application/vnd.api+json').json({errors:[{
+          id: 'no pod',
+          detail: `error getting info onn pod ${podName}`,
+          data: err
+        }]});
+      });
+    } else if (podInfo.user) {
+      res.status(401).type('application/vnd.api+json').json({ errors: [{
+        id:'not allowed',
+        detail:'You don\'t have the right to view that container.'}] });
+    } else {
+      res.status(400).type('application/vnd.api+json').json({ errors: [{
+        id: 'invalid request',
+        detail:'The pod name is incorrectly formatted.'}] });
+    }
   })
-
-  app.post(commandsBase + "/stopAll", ensureLoggedIn('/login'), function(req, res){
-  })
-
-  app.post(commandsBase + "/refresh", ensureLoggedIn('/login'), function(req, res){
+  
+  app.delete(commandsBase + "/container/:podname", ensureLoggedIn('/login'), bodyParser.json(), function(req, res){
+    var loggedUsername = components.selfUserName(req);
+    var podName = req.params.podname;
+    var podInfo = components.infoForPodName(podName)
+    if (podInfo.user && loggedUsername === podInfo.user) {
+      logger.info(`Deleting pod: ${podName}`)
+      k8.ns(config.k8component.namespace).pods.delete({ name: podName }, function (err, result) {
+        if (!err) {
+          logger.info(`deleted pod ${podName}`)
+          res.type('application/vnd.api+json').json({
+            data: {
+              id: podName,
+              type: 'pod',
+              attributes:{
+                data: result
+              }
+            }
+          });
+        } else {
+          logger.warn(`Error deleting pod ${podName}: ${stringify(err)}`)
+          res.type('application/vnd.api+json').json({
+            errors:[ {
+              id: 'delete error',
+              detail: `failed to delete pod ${podName}`,
+              data: err
+            }]});
+        }
+      });
+    } else if (podInfo.user) {
+      let err = {
+        id:'not allowed',
+        detail:'You don\'t have the right to delete that container.'}
+      logger.warn(stringify(err))
+      res.status(401).type('application/vnd.api+json').json({ errors: [err] });
+    } else {
+      let err = {
+        id: 'invalid request',
+        detail:'The pod name is incorrectly formatted.'}
+      logger.warn(stringify(err))
+      res.status(400).type('application/vnd.api+json').json({ errors: [err] });
+    }
   })
 
   /*app.get('/notebook-edit/*', ensureLoggedIn('/login'), function(req, res){

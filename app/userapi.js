@@ -158,48 +158,6 @@ module.exports = function (app, config, passport, models, ensureLoggedIn, bodyPa
     });
   });
 
-  /**
-   * Returns a list of RCs for a certain type of notebooks (imagetype) associated with the user's account (username)
-   */
-  app.get('/userapi/mycontainers/:imagetype', function (req, res) {
-    const k8 = require('../app/kubernetes')(config);
-    const k8component = require('../app/components')(config);
-    var username = selfUserName(req);
-    var imagetype = req.params.imagetype;
-    var searchPhrase = imagetype + '-rc-' + username;
-    logger.debug("Searching for replication controllers: " + searchPhrase);
-    k8.namespaces.replicationcontrollers.get(searchPhrase, function (err, result) {
-      if (!err) {
-        res.send(result);
-      } else res.send(err);
-    });
-  });
-
-  /**
-   * Delete an RC using its name (rcname)
-   */
-  app.get('/userapi/delete-container/:rcname', function (req, res) {
-    const k8 = require('../app/kubernetes')(config);
-    const k8component = require('../app/components')(config);
-    var rcName = req.params.rcname;
-    var loggedUsername = selfUserName(req);
-    var rcUsername = rcName.split('-')[2];
-    if (rcUsername && loggedUsername === rcUsername) {
-      logger.info("Deleting replication controller: " + rcName);
-      k8.namespaces.replicationcontrollers.delete({ name: rcName, preservePods: false }, function (err, result) {
-        if (!err) {
-          res.send(result);
-        } else res.send(err);
-      });
-    } else {
-      if (rcUsername)
-        res.send({ error: 'You don\'t have the right to delete that container.' });
-      else {
-        res.send({ error: 'The RC name is incorrectly formatted.' });
-      }
-    }
-  });
-
   /*app.get('/notebook-edit/*', function (req, res) {
     const target = 'https://labdev-nomad.esc.rzg.mpg.de/beaker/#/open?uri=' + req.url.slice(14, req.url.length).replace("/", "%2F")
     logger.debug(`notebook-edit redirecting to ${target}`)
