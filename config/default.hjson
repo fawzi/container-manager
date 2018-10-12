@@ -61,7 +61,6 @@ k8component: {
     image: ""
     port: 8801
     prefix: "/beaker"
-    homePath: "/home/beaker"
     autoRestart: true
     healthPath: "/"
     healthDelay: 2

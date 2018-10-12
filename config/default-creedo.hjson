@@ -5,6 +5,5 @@ k8component: {
     image: "labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/creedo:v0.4.2-2017-09-29",
     port: 8080,
     prefix: "/Creedo",
-    homePath: "/home/creedo"
   }
 }

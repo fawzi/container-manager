@@ -5,7 +5,6 @@ k8component: {
     image: "analytics-toolkit.nomad-coe.eu:5509/nomadlab/notebook:v1.11.6-229-g19da90a7-dirty"
     port: 8801,
     prefix: "/beaker",
-    homePath: "/home/beaker"
     healthPath: "/beaker"
     healthDelay: 5
     healthPeriod: 5
