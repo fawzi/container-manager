@@ -1,6 +1,7 @@
-title: "Active Containers"
+title: Too Many Containers
 ---
-<h1>Active Containers</h1>
+<h1>Too Many Containers</h1>
+<p>You have too many containers running, you have to close some to start a new one</p>
 
 <div id="msgs">
 </div>
@@ -20,31 +21,22 @@ title: "Active Containers"
      }
    };
 
-   xhttp.open("DELETE", "container/"+cName, true);
+   xhttp.open("DELETE", "{{commands}}/container/"+cName, true);
    xhttp.setRequestHeader('content-type','application/json')
    xhttp.send(JSON.stringify({name:cName}));
  }
 </script>
-
+<div class="alert alert-primary" role="alert">
+  <button type="button" class="btn btn-default" onclick="location.reload();">
+    Retry
+  </button>
+</div>
 {{#each pods as |pod|}}
 <div class="alery alert-{{pod.attributes.status}}" role="alert" >
-  {{#if pod.attributes.data }}
-  <a class="" data-toggle="collapse" href="#detail{{pod.attributes.name}}" aria-expanded="false" aria-controls="detail{{pod.attributes.name}}">
-    {{pod.attributes.name}}
-  </a>
-  {{else}}
   {{pod.attributes.name}}
-  {{/if}}
   ({{pod.attributes.time}})
   <button type="button" class="btn btn-default btn-sm" onclick="deleteContainer('{{pod.attributes.name}}');">
     Delete
   </button>
-  {{#if pod.attributes.data }}
-  <div class="collapse" id="detail{{pod.attributes.name}}">
-    <div class="card card-block">
-      <pre>{{prettyJson pod.attributes.data}}</pre>
-    </div>
-  </div>
-  {{/if}}
 </div>
 {{/each}}

@@ -17,6 +17,9 @@ var baseRepl = {
   baseUri: config.app.baseUri,
   baseUriPath: url.parse(config.app.baseUri).path
 };
+// ensure that baseUriPath does not end with /
+if (baseRepl.baseUriPath.endsWith('/'))
+  baseRepl.baseUriPath = baseRepl.baseUriPath.slice(0, baseRepl.baseUriPath.length -1)
 const br = config.app.baseReplacements
 for (k in br)
   baseRepl[k] = br[k];
@@ -86,29 +89,14 @@ function loadTemplate(templatePath, next) {
   }
 }
 
-// evaluates a template, here only the most basic replacements are given, you normally need to pass in extraRepl.
+// evaluates a template, here only the most basic replacements are given, you normally need to pass in replacements.
 // calls next with the resolved template plus all replacements defined
-function evalTemplate(templatePath, extraRepl, next) {
+function evalTemplate(templatePath, replacements, next) {
   loadTemplate(templatePath, function (err, template) {
     if (err) {
       next(err, null, undefined)
     } else {
-      const repl = Object.assign({}, extraRepl, baseRepl)
-      const res = template(repl)
-      //logger.debug(`evaluating <<${templatePath}>> with ${stringify(repl)} gives <<${res}>>`)
-      next(null, res, repl)
-    }
-  })
-}
-
-// evaluates a template, here only the most basic replacements are given, you normally need to pass in extraRepl.
-// calls next with the resolved template plus all replacements defined
-function evalTemplate(templatePath, extraRepl, next) {
-  loadTemplate(templatePath, function (err, template) {
-    if (err) {
-      next(err, null, undefined)
-    } else {
-      const repl = Object.assign({}, extraRepl, baseRepl)
+      const repl = Object.assign({}, baseRepl, replacements)
       const res = template(repl)
       //logger.debug(`evaluating <<${templatePath}>> with ${stringify(repl)} gives <<${res}>>`)
       next(null, res, repl)
@@ -219,7 +207,9 @@ function infoForPodName(podName) {
 }
 
 /// gives the replacements for the user
-function replacementsForUser(user, extraRepl, next) {
+/// overridingRepl have highest priority,
+/// injectedRepl are replacements applied last but respecting the protected keys
+function replacementsForUser(user, overridingRepl, injectedRepl, next) {
   var repl = {}
   var keysToProtect = new Set()
   var toSkip
@@ -240,16 +230,27 @@ function replacementsForUser(user, extraRepl, next) {
   let imageType = cconfig.image.imageType
   const userRepl = userSettings.getAppSetting(user, 'image:' + imageType)
   addRepl(userRepl)
-  // extraRepl overrides even protected values
-  if (extraRepl)
-    for (k in extraRepl)
-      repl[k] = extraRepl[k]
+  addRepl(injectedRepl)
+  // overridingRepl overrides even protected values
+  if (overridingRepl)
+    for (k in overridingRepl)
+      repl[k] = overridingRepl[k]
   // "real" user imageType and podName overrided everything
   repl['user'] = user
   repl['imageType'] = imageType
   repl['podName'] = podNameForRepl(repl)
   delete repl.replacementsChecksum
-  repl.replacementsChecksum = compact_sha.objectSha(repl)
+  let replToChecksum = repl
+  if (repl.checksumSkipReStr) {
+    let re = new RegExp(repl.checksumSkipReStr)
+    replToChecksum = {}
+    for (var k in repl) {
+      let m = re.exec(k)
+      if (!m)
+        replToChecksum[k] = repl[k]
+    }
+  }
+  repl.replacementsChecksum = compact_sha.objectSha(replToChecksum)
 
   next(null, repl)
 }
@@ -274,7 +275,7 @@ function cachedReplacements(req, next) {
   if (repl) {
     next(null, repl)
   } else if (!cconfig.entryPoint.exclusiveStartPoint) {
-    replacementsForUser(selfUserName(req), {}, function(err, newRepl) {
+    replacementsForUser(selfUserName(req), {}, {},  function(err, newRepl) {
       if (!req.session.replacements)
         req.session.replacements = {}
       req.session.replacements[imageType] = newRepl

@@ -12,4 +12,11 @@ k8component: {
     livePath: "/beaker"
     liveDelay: 15
   }
+  entryPoint: {
+    path: "/notebook-edit/*"
+    pathReStr: "/notebook-edit(/[^?#]*)(\\?[^#]*)?(#.*)?$"
+    redirectTarget: "{{baseUri}}/beaker/#/open?uri={{escapedPath1}}"
+    execCommand: []
+    exclusiveStartPoint: false
+  }
 }
