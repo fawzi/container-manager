@@ -9,7 +9,6 @@ app: {
   resolveCacheNMax: 30000
   pageReloadTime: 5
   frontendAddr: "http://127.0.0.1:4200"
-  baseUri: "http://127.0.0.1"
   catchErrors: false
   templatesDir: "{{baseDir}}/templates"
   baseReplacements: {
@@ -71,14 +70,14 @@ k8component: {
     checksumSkipReStr: "^(?:path[0-9]*|escapedPath[0-9]*)$"
   }
   entryPoint: {
-    path: "/notebook-edit/*"
-    pathReStr: "/notebook-edit(/[^?#]*)(\\?[^#]*)?(#.*)?$"
-    redirectTarget: "{{baseUri}}/beaker/#/open?uri={{escapedPath1}}"
+    path: "{{commands}}/start/*"
+    pathReStr: "/start(/[^?#]*)(\\?[^#]*)?(#.*)?$"
+    redirectTarget: "{{prefix}}/"
     execCommand: []
     exclusiveStartPoint: false
   }
   commands: {
-    path: "{{baseUriPath}}/cM"
+    path: "{{prefix}}/cM"
   }
 }
 userInfo: {

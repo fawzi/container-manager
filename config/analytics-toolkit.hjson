@@ -26,4 +26,10 @@
      port: 6390,
      host: 'analytics-toolkit.nomad-coe.eu'
   }
+  k8component: {
+    entryPoint: {
+      path: "/notebook-edit/*"
+      pathReStr: "/notebook-edit(/[^?#]*)(\\?[^#]*)?(#.*)?$"
+    }
+  }
 }

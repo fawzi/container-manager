@@ -14,12 +14,11 @@ const yaml = require('js-yaml')
 
 var baseRepl = {
   baseDir: baseDir,
-  baseUri: config.app.baseUri,
-  baseUriPath: url.parse(config.app.baseUri).path
+  prefix: config.k8component.image.prefix
 };
-// ensure that baseUriPath does not end with /
-if (baseRepl.baseUriPath.endsWith('/'))
-  baseRepl.baseUriPath = baseRepl.baseUriPath.slice(0, baseRepl.baseUriPath.length -1)
+// ensure that prefix does not end with /
+if (baseRepl.prefix.endsWith('/'))
+  baseRepl.prefix = baseRepl.prefix.slice(0, baseRepl.prefix.length -1)
 const br = config.app.baseReplacements
 for (k in br)
   baseRepl[k] = br[k];
