@@ -56,7 +56,7 @@ function jsonApiPods(labels, next, {details = true}={}) {
           let status = "danger"
           if (pod.metadata.deletionTimestamp) {
             status = "danger"
-          else if (pod.status && pod.status.phase === 'Pending') {
+          } else if (pod.status && pod.status.phase === 'Pending') {
             status = "warning"
           } else if (pod.status && pod.status.phase === 'Running') {
             const conds = pod.status.conditions
