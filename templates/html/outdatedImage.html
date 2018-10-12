@@ -1,8 +1,10 @@
-title: "Active Containers"
+title: Outdated Image
 ---
-<h1>Active Containers</h1>
+<h1>Outdated image</h1>
+<p>You already have a container running for {{podName}}, but its replacements are different (checksum:{{runningChecksum}}) from the one requested (checksum:{{currentChecksum}}).</p>
 
 <div id="msgs">
+  {{{msgs}}}
 </div>
 
 <script type="text/javascript">
@@ -20,31 +22,19 @@ title: "Active Containers"
      }
    };
 
-   xhttp.open("DELETE", "container/"+cName, true);
+   xhttp.open("DELETE", "{{commands}}/container/"+cName, true);
    xhttp.setRequestHeader('content-type','application/json')
    xhttp.send(JSON.stringify({name:cName}));
  }
 </script>
 
-{{#each pods as |pod|}}
-<div class="alery alert-{{pod.attributes.status}}" role="alert" >
-  {{#if pod.attributes.data }}
-  <a class="" data-toggle="collapse" href="#detail{{pod.attributes.name}}" aria-expanded="false" aria-controls="detail{{pod.attributes.name}}">
-    {{pod.attributes.name}}
-  </a>
-  {{else}}
-  {{pod.attributes.name}}
-  {{/if}}
-  ({{pod.attributes.time}})
-  <button type="button" class="btn btn-default btn-sm" onclick="deleteContainer('{{pod.attributes.name}}');">
-    Delete
-  </button>
-  {{#if pod.attributes.data }}
-  <div class="collapse" id="detail{{pod.attributes.name}}">
-    <div class="card card-block">
-      <pre>{{prettyJson pod.attributes.data}}</pre>
-    </div>
-  </div>
-  {{/if}}
-</div>
-{{/each}}
+<p>You can either <a href="{{target}}"><button type="button" class="btn btn-default btn-sm">
+  Continue
+</button></a>
+using the running container, or
+<button type="button" class="btn btn-default btn-sm" onclick="deleteContainer('{{podName}}');">
+  Stop
+</button>
+the old container and   <button type="button" class="btn btn-default btn-sm" onclick="location.reload();">
+  retry
+</button> to start a new one.

@@ -1,4 +1,4 @@
-config = require('config')
+const config = require('config')
 const handlebars = require('handlebars');
 const fs = require('fs');
 const path = require('path');
@@ -17,9 +17,20 @@ var baseRepl = {
   baseUri: config.app.baseUri,
   baseUriPath: url.parse(config.app.baseUri).path
 };
+// ensure that baseUriPath does not end with /
+if (baseRepl.baseUriPath.endsWith('/'))
+  baseRepl.baseUriPath = baseRepl.baseUriPath.slice(0, baseRepl.baseUriPath.length -1)
 const br = config.app.baseReplacements
 for (k in br)
-   baseRepl[k] = br[k];
+  baseRepl[k] = br[k];
+
+handlebars.registerHelper('json', function(object){
+        return new Handlebars.SafeString(stringify(object));
+});
+
+handlebars.registerHelper('prettyJson', function(object){
+  return stringify(object, null, 2);
+});
 
 // Create a template from the given string
 function templatize(str) {
@@ -78,29 +89,14 @@ function loadTemplate(templatePath, next) {
   }
 }
 
-// evaluates a template, here only the most basic replacements are given, you normally need to pass in extraRepl.
+// evaluates a template, here only the most basic replacements are given, you normally need to pass in replacements.
 // calls next with the resolved template plus all replacements defined
-function evalTemplate(templatePath, extraRepl, next) {
+function evalTemplate(templatePath, replacements, next) {
   loadTemplate(templatePath, function (err, template) {
     if (err) {
       next(err, null, undefined)
     } else {
-      const repl = Object.assign({}, extraRepl, baseRepl)
-      const res = template(repl)
-      //logger.debug(`evaluating <<${templatePath}>> with ${stringify(repl)} gives <<${res}>>`)
-      next(null, res, repl)
-    }
-  })
-}
-
-// evaluates a template, here only the most basic replacements are given, you normally need to pass in extraRepl.
-// calls next with the resolved template plus all replacements defined
-function evalTemplate(templatePath, extraRepl, next) {
-  loadTemplate(templatePath, function (err, template) {
-    if (err) {
-      next(err, null, undefined)
-    } else {
-      const repl = Object.assign({}, extraRepl, baseRepl)
+      const repl = Object.assign({}, baseRepl, replacements)
       const res = template(repl)
       //logger.debug(`evaluating <<${templatePath}>> with ${stringify(repl)} gives <<${res}>>`)
       next(null, res, repl)
@@ -111,7 +107,7 @@ function evalTemplate(templatePath, extraRepl, next) {
 // Immediately returns an html describing the error
 function getHtmlErrorTemplate(err, context = '') {
   let error = '', error_msg = '', error_detail = ''
-  if (!err) {
+  if (err) {
     try {
       error_detail = stringify(err, null, 2)
       error = err.error || ''
@@ -135,18 +131,18 @@ function getHtmlErrorTemplate(err, context = '') {
       </pre>
       </body>
       </html>`
+  } else {
+    return ''
   }
 }
 
 // Helper to evaluate a web page template (layout + content)
 // will *always* give an html as result (it there was an error it describe the error
 function evalHtmlTemplate(htmlPath, repl, next, { context = '' } = {} ) {
-  logger.debug('entered evalHtmlTemplate')
-  logger.debug(`entering evalHtmlTemplate(${stringify(htmlPath)}, ${stringify(repl)},...)`)
+  //logger.debug(`entering evalHtmlTemplate(${stringify(htmlPath)}, ${stringify(repl)},...)`)
   evalTemplate('html/'+htmlPath, repl, function (err, template){
-    logger.debug(`eval internal template err:${stringify(err)}, body:${stringify(template)}`)
     if (err) {
-      logger.debug(`returning error`)
+      logger.warn(`evalTemplate ${htmlPath} returning error ${stringify(err)}`)
       next(err, getHtmlErrorTemplate(err, context))
     } else {
       let extraRepl = {}
@@ -156,20 +152,18 @@ function evalHtmlTemplate(htmlPath, repl, next, { context = '' } = {} ) {
         templateBody = template.slice(m.index + 3)
         extraRepl = yaml.safeLoad(template.slice(0, m.index), 'utf8')
       }
-      logger.debug(`eval layout with extraRepl: ${stringify(extraRepl)} templateBody: ${stringify(templateBody)}`)
       const repl2 = Object.assign({title: htmlPath, head: '', layout: "defaultLayout.html"}, extraRepl, repl, { body: templateBody })
       const layout = repl2.layout
       if (layout) {
         evalTemplate("htmlLayout/"+layout, repl2, function(err,res){
-          logger.debug(`evaluated template, err: ${stringify(err)}`)
           if (err) {
             next(err, getHtmlErrorTemplate(err, context))
           } else {
-            next(nil, res)
+            next(null, res)
           }
         })
       } else {
-        next(nil, templateBody)
+        next(null, templateBody)
       }
     }
   })
@@ -203,7 +197,7 @@ function podNameForRepl(repl) {
 /// returns the keys (user,...) for the given pod name
 function infoForPodName(podName) {
   const imageType = podName.slice(0,podName.indexOf('-'))
-  const imageSubtype = podName.slice(podName.lastIndexOf('-'), podName.length)
+  const imageSubtype = podName.slice(podName.lastIndexOf('-') + 1, podName.length)
   const user = podName.slice(imageType.length + 1, podName.length - imageSubtype.length - 1)
   return {
     imageType: imageType,
@@ -213,7 +207,9 @@ function infoForPodName(podName) {
 }
 
 /// gives the replacements for the user
-function replacementsForUser(user, extraRepl, next) {
+/// overridingRepl have highest priority,
+/// injectedRepl are replacements applied last but respecting the protected keys
+function replacementsForUser(user, overridingRepl, injectedRepl, next) {
   var repl = {}
   var keysToProtect = new Set()
   var toSkip
@@ -234,16 +230,27 @@ function replacementsForUser(user, extraRepl, next) {
   let imageType = cconfig.image.imageType
   const userRepl = userSettings.getAppSetting(user, 'image:' + imageType)
   addRepl(userRepl)
-  // extraRepl overrides even protected values
-  if (extraRepl)
-    for (k in extraRepl)
-      repl[k] = extraRepl[k]
+  addRepl(injectedRepl)
+  // overridingRepl overrides even protected values
+  if (overridingRepl)
+    for (k in overridingRepl)
+      repl[k] = overridingRepl[k]
   // "real" user imageType and podName overrided everything
   repl['user'] = user
   repl['imageType'] = imageType
   repl['podName'] = podNameForRepl(repl)
   delete repl.replacementsChecksum
-  repl.replacementsChecksum = compact_sha.objectSha(repl)
+  let replToChecksum = repl
+  if (repl.checksumSkipReStr) {
+    let re = new RegExp(repl.checksumSkipReStr)
+    replToChecksum = {}
+    for (var k in repl) {
+      let m = re.exec(k)
+      if (!m)
+        replToChecksum[k] = repl[k]
+    }
+  }
+  repl.replacementsChecksum = compact_sha.objectSha(replToChecksum)
 
   next(null, repl)
 }
@@ -268,7 +275,7 @@ function cachedReplacements(req, next) {
   if (repl) {
     next(null, repl)
   } else if (!cconfig.entryPoint.exclusiveStartPoint) {
-    replacementsForUser(selfUserName(req), {}, function(err, newRepl) {
+    replacementsForUser(selfUserName(req), {}, {},  function(err, newRepl) {
       if (!req.session.replacements)
         req.session.replacements = {}
       req.session.replacements[imageType] = newRepl

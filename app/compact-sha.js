@@ -12,8 +12,10 @@ function compactSha(hash, prefix='o') {
 
 function objectSha(obj, prefix='o') {
   const hash = sha()
-  hash.write(stringify(obj))
-  return compactSha(hash, prefix)
+  const sObj = stringify(obj)
+  hash.write(sObj)
+  const cSha = compactSha(hash, prefix)
+  return cSha
 }
 
 

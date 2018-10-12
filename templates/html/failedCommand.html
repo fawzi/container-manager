@@ -1,0 +1,14 @@
+title: "Failed command"
+---
+<h1>Failed command</h1>
+<p>Failed command {{command}} on pod {{podName}}.</p>
+<pre>
+{{error}}
+</pre>
+<p>
+  <a href="{{target}}"><button type="button" class="btn btn-default btn-sm">
+    Continue
+  </button></a> or <button type="button" class="btn btn-default btn-sm" onclick="location.reload();">
+    Retry
+  </button>
+</p>
