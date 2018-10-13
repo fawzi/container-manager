@@ -82,10 +82,10 @@ k8component: {
 }
 userInfo: {
   demoToWatch: "/nomad/nomadlab/demos"
-  basePathToWatch: "/nomad/nomadlab/user-data",
-  privateDir: "/nomad/nomadlab/user-data/private",
-  sharedDir: "/nomad/nomadlab/user-data/shared",
-  privateDirInContainer: "/data/private",
-  sharedDirInContainer: "/data/shared",
+  basePathToWatch: "/nomad/nomadlab/user-data"
+  privateDir: "/nomad/nomadlab/user-data/private"
+  sharedDir: "/nomad/nomadlab/user-data/shared"
+  privateDirInContainer: "/data/private"
+  sharedDirInContainer: "/data/shared"
   mySharedDirInContainer: "/data/my-shared"
 }

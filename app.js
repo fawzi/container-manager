@@ -3,9 +3,22 @@ function main() {
   var iarg = 2
   var args = process.argv
   var cmds = []
-  const usage = `node ${args[1]} [-h|--help] [--image-type [beaker|jupyter|creedo|remotevis]] [webserver|watcher]
-  `
+  const usage = `node ${args[1]} [-h|--help] [--image-type [beaker|jupyter|creedo|remotevis]] [webserver|watcher|apiserver]
+
+  node ${args[1]} serviceDumper <serviceListFile>
+    `
   var imageType = undefined
+  if (iarg < args.length) {
+    if (args[iarg] == 'serviceDumper') {
+      cmds.push('serviceDumper')
+      require('./app/service-dumper').serviceDumper(args.slice(iarg + 1))
+      return;
+    } else if (args[iarg] == 'templateEvaluer') {
+      require('./app/template-evaluer').templateEvaluer(args.slice(iarg + 1))
+      return;
+    }
+  }
+  if (cmds.length == 0)
   while (iarg < args.length) {
     var arg = args[iarg]
     iarg += 1
@@ -29,6 +42,7 @@ function main() {
       throw new Error(`unknown command line argument '${arg}'.\n${usage}`)
     }
   }
+
   if (imageType)
     process.env["NODE_APP_INSTANCE"] = imageType;
   const config = require('config')
@@ -40,6 +54,10 @@ function main() {
     process.on('uncaughtException', (err) => {
       logger.error(`UncaughtException: ${stringify(err)}`)
     })
+  }
+  if (cmds.includes('serviceDumper')) {
+    require('./app/service-dumper').serviceDumper(args.slice(iarg + 1))
+    return;
   }
   const watcherRequired = cmds.includes("watcher")
   const webserverRequired = cmds.includes("webserver")

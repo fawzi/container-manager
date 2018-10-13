@@ -5,6 +5,7 @@ const fs = require('fs');
 const components = require('./components');
 const yaml = require('js-yaml')
 const logger = require('./logger')
+const url = require('url');
 
 // cache pod name -> host & port
 const resolveCache = require('../safe-memory-cache/map.js')({
@@ -277,6 +278,8 @@ function resolvePod(repl, next) {
   }
 }
 
+
+
 function deletePod(podName, next) {
   k8.ns(config.k8component.namespace).pods.delete({ name: podName }, function (err, result) {
     resolveCache.set(podName, undefined)
@@ -290,6 +293,41 @@ function deletePod(podName, next) {
   })
 }
 
+// returns info about services indexed by service
+function getServiceInfo(namespace, next, {details = false} = {}) {
+  k8.ns(namespace).services.get({}, function(err, res) {
+    if (err) {
+      next(err, null)
+    } else {
+      let services = {}
+      let master = config.k8Api.url
+      let masterHostname = new url.URL(master).hostname
+      let node = config.k8Api.node
+      if (res.items)
+      for (let is in res.items) {
+        let s = res.items[is]
+        let service = {
+          name: s.metadata.name,
+          namespace: s.metadata.namespace,
+          ports: [],
+          master: master,
+          masterHostname: masterHostname,
+          node: node
+        }
+        if (s.spec.clusterIP && s.spec.clusterIP != 'None')
+          service.clusterIP = s.spec.clusterIP
+        if (s.spec.ports)
+          service.ports = s.spec.ports
+        if (services[service.name])
+          services[service.name].push(service)
+        else
+          services[service.name]=[service]
+      }
+      next(null, services)
+    }
+  })
+}
+
 module.exports = {
   getPods: getPods,
   jsonApiPods: jsonApiPods,
@@ -297,5 +335,6 @@ module.exports = {
   guaranteeDir: guaranteeDir,
   guaranteeUserDir: guaranteeUserDir,
   resolvePod: resolvePod,
-  deletePod: deletePod
+  deletePod: deletePod,
+  getServiceInfo: getServiceInfo
 }
