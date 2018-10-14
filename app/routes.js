@@ -7,7 +7,7 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
 
   function setFrontendHeader() {
     return function(req, res, next) {
-      res.setHeader('Access-Control-Allow-Origin', config.app.frontendAddr);
+      res.setHeader('Access-Control-Allow-Origin', config.app.frontendUrl);
       res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
       res.header('Access-Control-Allow-Methods', 'POST, GET, PUT, DELETE, OPTIONS');
       next();

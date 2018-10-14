@@ -5,7 +5,7 @@
       key: "web-certs/key.pem"
       cert: "web-certs/cert.pem"
     }
-    frontendAddr: "https://analytics-toolkit.nomad-coe.eu"
+    frontendUrl: "https://analytics-toolkit.nomad-coe.eu"
   }
   passport: {
     strategy: "saml"

@@ -303,6 +303,9 @@ function getServiceInfo(namespace, next, {details = false} = {}) {
       let master = config.k8Api.url
       let masterHostname = new url.URL(master).hostname
       let node = config.k8Api.node
+      let frontendUrl = config.api.frontendUrl
+      let frontendHostname = new url.URL(frontendUrl).hostname
+      let frontendProtocol = new url.URL(frontendUrl).protocol
       if (res.items)
       for (let is in res.items) {
         let s = res.items[is]
@@ -312,7 +315,10 @@ function getServiceInfo(namespace, next, {details = false} = {}) {
           ports: [],
           master: master,
           masterHostname: masterHostname,
-          node: node
+          nodes: [node],
+          frontendUrl: frontendUrl,
+          frontendProtocol: frontendProtocol,
+          frontendHostname: frontendHostname
         }
         if (s.spec.clusterIP && s.spec.clusterIP != 'None')
           service.clusterIP = s.spec.clusterIP

@@ -4,7 +4,7 @@
       key: "web-certs/key.pem"
       cert: "web-certs/cert.pem"
     }
-    frontendAddr: "https://labdev-nomad.esc.rzg.mpg.de"
+    frontendUrl: "https://labdev-nomad.esc.rzg.mpg.de"
     debug: true
   }
   passport: {

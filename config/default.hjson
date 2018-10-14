@@ -8,7 +8,7 @@ app: {
   resolveCacheTtlMaxMs: 30000
   resolveCacheNMax: 30000
   pageReloadTime: 5
-  frontendAddr: "http://127.0.0.1:4200"
+  frontendUrl: "http://127.0.0.1:4200"
   catchErrors: false
   templatesDir: "{{baseDir}}/templates"
   baseReplacements: {

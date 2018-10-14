@@ -2,7 +2,7 @@
   "app": {
     "secret": "APP_SECRET"
     "port": "PORT"
-    "frontendAddr": "FRONTEND_BASE_URI"
+    "frontendUrl": "FRONTEND_BASE_URI"
   }
   "k8Api": {
     "url":  "KUBERNETES_SERVER_URL"
