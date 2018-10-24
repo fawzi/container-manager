@@ -41,6 +41,15 @@ baseRepl['templatesDir'] = templatesDir
 baseRepl['namespace'] = cconfig.namespace
 baseRepl['commands'] = templatize(cconfig.commands.path)(baseRepl)
 
+const loginPrefix = (config.app.globalLogin ? '' : baseRepl.commands)
+//if (cmds.includes('apiserver'))
+//  loginPrefixes.push('/userapi')
+//if (cmds.includes('webserver'))
+//  loginPrefixes.push(config.k8component.image.imageType)
+const loginUri = loginPrefix + '/login'
+baseRepl.loginPrefix = loginPrefix
+baseRepl.loginUri = loginUri
+
 // Given a path loads it and compiles a template for it, use loadTemplate that has caching
 function loadTemplateInternal(templatePath, next) {
   const templateRealPath = path.join(templatesDir, templatePath || "kube/defaultTemplate.yaml")

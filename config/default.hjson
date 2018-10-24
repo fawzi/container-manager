@@ -15,6 +15,7 @@ app: {
     nomadRoot: "/nomad/nomadlab"
   }
   debug: false
+  globalLogin: true
 }
 mongoDb: {
   url: "mongodb://notebook-info-db-mongodb/filedatabase"

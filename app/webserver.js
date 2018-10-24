@@ -19,14 +19,9 @@ module.exports = function(config, models, cmds) {
   const fs = require('fs');
   const ensureLoggedIn = require('connect-ensure-login').ensureLoggedIn;
   const logger = require('./logger')
+  const components = require('./components')
 
-  var loginPrefixes = ['']
-  //if (cmds.includes('apiserver'))
-  //  loginPrefixes.push('/userapi')
-  //if (cmds.includes('webserver'))
-  //  loginPrefixes.push(config.k8component.image.imageType)
-  //
-  // config.passport.saml.path = loginPrefixes[loginPrefixes.length - 1] + config.passport.saml.path
+  config.passport.saml.path = components.baseRepl.loginPrefix + config.passport.saml.path
   const strategies = require('./passport-settings')(passport, config);
 
   var app = express();
@@ -71,38 +66,17 @@ module.exports = function(config, models, cmds) {
     httpServer = https.createServer(httpsOptions, app);
   }
 
-  for (var loginPrefixIndex in loginPrefixes) {
-    const loginPrefix = loginPrefixes[loginPrefixIndex]
-    const loginUri = loginPrefix + '/login'
   //if (config.passport.strategy === "local") {
   //  const flash = require('connect-flash');
   //  app.use(flash());
   //}
+  const loginUri = components.baseRepl.loginUri
 
-    app.get(loginUri,function(req, res, next) {
+  app.get(loginUri,function(req, res, next) {
     if (config.passport.strategy === "local") {
-      res.send(`
-        <html>
-           <head>
-              <title>Login</title>
-           </head>
-           <body>
-             <h1>Login</h1>
-             <form action="${loginUri}/callback" method="post">
-                <div>
-                    <label>Username:</label>
-                    <input type="text" name="username"/>
-                </div>
-                <div>
-                    <label>Password:</label>
-                    <input type="password" name="password"/>
-                </div>
-                <div>
-                    <input type="submit" value="Log In"/>
-                </div>
-             </form>
-           </body>
-         </html>`)
+      components.evalHtmlTemplate('login.html',{}, function (err, template) {
+        res.send(template)
+      })
     } else {
       var target = '/'
       if (req.session && req.query.redirectTo)
@@ -112,10 +86,9 @@ module.exports = function(config, models, cmds) {
   }, passport.authenticate(
     config.passport.strategy,
     {
-      successReturnToOrRedirect: '/',
+      successReturnToOrRedirect: config.k8component.image.prefix + '/',
       failureRedirect: loginUri
-    })
-         );
+    }));
 
   app.get(loginUri + '/logout', function(req, res){
     var user;
@@ -162,7 +135,7 @@ module.exports = function(config, models, cmds) {
              }
            }
           );
-  }
+
 
   if (cmds.includes('webserver')) {
     logger.info('starting webserver')

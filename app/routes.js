@@ -4,6 +4,7 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
   const stringify = require('json-stringify-safe')
   const k8D = require('./k8-data')
   const compactSha = require('./compact-sha')
+  const loginUri = components.baseRepl.loginUri
 
   function setFrontendHeader() {
     return function(req, res, next) {
@@ -29,7 +30,7 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
   let entryPath = components.templatize(cconf.entryPoint.path)(components.baseRepl)
   logger.debug(`entryPoint: ${entryPath}`)
 
-  app.get(entryPath, ensureLoggedIn('/login'), bodyParser.json(), bodyParser.urlencoded({extended:true}), function(req, res){
+  app.get(entryPath, ensureLoggedIn(loginUri), bodyParser.json(), bodyParser.urlencoded({extended:true}), function(req, res){
     function isEmpty(obj) { 
       for (var x in obj) { return false; }
       return true;
@@ -170,7 +171,7 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
 
   const commandsBase = components.templatize(cconf.commands.path)(components.baseRepl)
 
-  app.get(commandsBase + "/view-containers", ensureLoggedIn('/login'), bodyParser.urlencoded({extended: true}), function(req, res){
+  app.get(commandsBase + "/view-containers", ensureLoggedIn(loginUri), bodyParser.urlencoded({extended: true}), function(req, res){
     let user = components.selfUserName(req)
     var selectors
     if (req.body)
@@ -192,7 +193,7 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
     })
   })
 
-  app.get(commandsBase + "/container", ensureLoggedIn('/login'), bodyParser.json(), bodyParser.urlencoded({extended: true}), function(req, res){
+  app.get(commandsBase + "/container", ensureLoggedIn(loginUri), bodyParser.json(), bodyParser.urlencoded({extended: true}), function(req, res){
     k8D.jsonApiPods(req.body, function(err, pods) {
       if (err) {
         res.status(400).type('application/vnd.api+json').json({ errors: [{ id: 'ErrorContainer',
@@ -205,7 +206,7 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
     })
   })
 
-  app.get(commandsBase + "/container/:podname", ensureLoggedIn('/login'), bodyParser.json(), function(req, res){
+  app.get(commandsBase + "/container/:podname", ensureLoggedIn(loginUri), bodyParser.json(), function(req, res){
     var loggedUsername = components.selfUserName(req);
     var podName = req.params.podname;
     var podInfo = components.infoForPodName(podName)
@@ -236,7 +237,7 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
     }
   })
   
-  app.delete(commandsBase + "/container/:podname", ensureLoggedIn('/login'), bodyParser.json(), function(req, res){
+  app.delete(commandsBase + "/container/:podname", ensureLoggedIn(loginUri), bodyParser.json(), function(req, res){
     var loggedUsername = components.selfUserName(req);
     var podName = req.params.podname;
     var podInfo = components.infoForPodName(podName)
@@ -277,7 +278,7 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
     }
   })
  
-  app.all('/*', ensureLoggedIn('/login'), function (req, res) {
+  app.all('/*', ensureLoggedIn(loginUri), function (req, res) {
     //logger.debug('Pre redirect, Retrieved session: '+stringify(req.session, null, 2))
     redirect(req, res, req.user.id, false, cconf['imageType'], function(route){
       proxyServer.web(req, res,{
