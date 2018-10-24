@@ -16,6 +16,7 @@ const resolveCache = require('../safe-memory-cache/map.js')({
 })
 
 // gets pods with the given labels
+// returns the raw response
 function getPods(labels, next) {
   let selector = ""
   let first = true
@@ -26,7 +27,7 @@ function getPods(labels, next) {
       selector += ','
     selector += `${k}=${labels[k]}`
   }
-  k8.ns(config.k8component.namespace).pods.get({ qs: { labelSelector: selector } }, next)
+  k8.api.v1.ns(config.k8component.namespace).pods.get({ qs: { labelSelector: selector } }).then(function(data){ next(null, data); }, function(err){ next(err, null) })
 }
 
 // gets json api formatted pods
@@ -36,7 +37,7 @@ function jsonApiPods(labels, next, {details = true}={}) {
     if (err) {
       next(err, [])
     } else {
-      let podList = pods.items
+      let podList = pods.body.items
       if (podList)
         podList = podList.map(function(pod){
           let secondsSinceCreation = (Date.now() - Date.parse(pod.metadata.creationTimestamp))/ 1000.0
@@ -88,6 +89,8 @@ function jsonApiPods(labels, next, {details = true}={}) {
             podInfo.attributes.data = pod
           return podInfo
         })
+      else
+        podList=[]
       next(null, podList)
     }
   })
@@ -153,14 +156,12 @@ function createPod(podName, repl, next) {
             }, null)
           } else {
             const templateValue = yaml.safeLoad(template, 'utf8')
-            k8.ns(config.k8component.namespace).pod.post({ body: templateValue}, function(err, res2){
-              if(err) {
-                logger.error(`Cannot start pod ${podName}, error: ${stringify(err)}, \n====\ntemplate was ${template}\n====`);
-                next(err, null)
-              } else {
-                logger.info(`Created pod ${podName}: ${stringify(res2)}`)
-                next(null, res2)
-              }
+            k8.api.v1.ns(config.k8component.namespace).pod.post({ body: templateValue}).then(function(res2){
+              logger.info(`Created pod ${podName}: ${stringify(res2)}`)
+              next(null, res2.body)
+            }, function(err) {
+              logger.error(`Cannot start pod ${podName}, error: ${err.message} ${stringify(err)}, \n====\ntemplate was ${template}\n====`);
+              next(err, null)
             })
           }
         })
@@ -171,49 +172,56 @@ function createPod(podName, repl, next) {
 
 /// functions that either gives the running pod or starts it
 function getOrCreatePod(podName, repl, shouldCreate, next) {
-  k8.ns(config.k8component.namespace).pod.get(podName, function(err, result) {
-    if(err || result &&
-       (result.status && ['Error', 'Failed', 'Succeeded'].includes(result.status.phase) ||
-        result.metadata && result.metadata.deletionTimestamp)) {
-      if (result && result.metadata && result.metadata.deletionTimestamp) {
+  k8.api.v1.ns(config.k8component.namespace).pod(podName).get().then(function(result) {
+    if (result && result.body) {
+      let pod = result.body
+      if (pod.metadata && pod.metadata.deletionTimestamp) {
         let error = {
           error: 'pod shutting down',
           detail: `Pod ${podName} is shutting down, need to wait to restart`
         }
         logger.warn(error.detail)
         next(error, null)
-      } else if (result && result.status && ['Error', 'Failed', 'Succeeded'].includes(result.status.phase)) {
+      } else if (pod.status && ['Error', 'Failed', 'Succeeded'].includes(pod.status.phase)) {
         if (shouldCreate) {
-          k8.ns(config.k8component.namespace).pods.delete({ name: podName }, function (err, result) {
-            if (!err) {
-              logger.info(`Deleted stopped pod ${podName} to restart it`)
-              createPod(podName, repl, next) // wait & return 'pod shutting down' instead?
-            } else {
-              let error = {
-                error: 'failed deleting pod',
-                detail: `Error deleting pod ${podName} while trying to restart it: ${stringify(err)}`
-              }
-              logger.warn(error.detail)
-              next(err, null)
+          k8.api.v1.ns(config.k8component.namespace).pods.delete({ name: podName }).then(function (delResult) {
+            logger.info(`Deleted stopped pod ${podName} to restart it`)
+            createPod(podName, repl, next) // wait & return 'pod shutting down' instead?
+          }, function(err) {
+            let error = {
+              error: 'failed deleting pod',
+              detail: `Error deleting pod ${podName} while trying to restart it: ${stringify(err)}`
             }
+            logger.warn(error.detail)
+            next(err, null)
           });
-        } else {
-          let error = {
-            error: 'pod failed',
-            detail: `Requested pod ${podName} which failed but should not be created, error: ${stringify(err)}`
-          }
-          logger.error(error.detail);
-          next(error, null)
         }
-      } else if (shouldCreate) {
-        createPod(podName, repl, next)
       } else {
-        logger.error(`Requested pod ${podName} which does not exist and should not be created, error: ${stringify(err)}`);
-        next(err, null)
+        //logger.debug(`looked up ${podName}: ${stringify(result)}`)
+        next(null, pod)
       }
     } else {
-      //logger.debug(`looked up ${podName}: ${stringify(result)}`)
-      next(null, result)
+      if (shouldCreate) {
+        createPod(podName, repl, next)
+      } else {
+        let error = {
+          error: 'pod failed',
+          detail: `Requested pod ${podName} which does not exist and should not be created`
+        }
+        logger.error(error.detail);
+        next(error, null)
+      }
+    }
+  }, function(err) {
+    if (shouldCreate) {
+      createPod(podName, repl, next)
+    } else {
+      let error = {
+        error: 'pod failed',
+        detail: `Requested pod ${podName} which failed but should not be created, error: ${stringify(err)}`
+      }
+      logger.error(error.detail);
+      next(error, null)
     }
   });
 }
@@ -222,10 +230,11 @@ function resolvePod(repl, next) {
   const podName = components.podNameForRepl(repl)
   var v = resolveCache.get(podName)
   if (v === undefined) {
-    getOrCreatePod(podName, repl, config.k8component.image.autoRestart, function (err, pod) {
+    getOrCreatePod(podName, repl, config.k8component.image.autoRestart, function (err, reply) {
       if (err) {
         next(err, null)
       } else {
+        let pod = reply
         const portNr = pod.spec.containers[0].ports[0].containerPort
         const podIp = pod.status.podIP
         if (podIp) {
@@ -281,34 +290,29 @@ function resolvePod(repl, next) {
 
 
 function deletePod(podName, next) {
-  k8.ns(config.k8component.namespace).pods.delete({ name: podName }, function (err, result) {
+  k8.api.v1.ns(config.k8component.namespace).pods.delete({ name: podName }).then(function (result) {
     resolveCache.set(podName, undefined)
-    if (!err) {
-      logger.info(`deleted pod ${podName}`)
-      next(null, result)
-    } else {
-      logger.warn(`Error deleting pod ${podName}: ${stringify(err)}`)
-      next(err, null)
-    }
+    logger.info(`deleted pod ${podName}`)
+    next(null, result.body)
+  }, function(err) {
+    logger.warn(`Error deleting pod ${podName}: ${stringify(err)}`)
+    next(err, null)
   })
 }
 
 // returns info about services indexed by service
 function getServiceInfo(namespace, next, {details = false} = {}) {
-  k8.ns(namespace).services.get({}, function(err, res) {
-    if (err) {
-      next(err, null)
-    } else {
-      let services = {}
-      let master = config.k8Api.url
-      let masterHostname = new url.URL(master).hostname
-      let node = config.k8Api.node
-      let frontendUrl = config.api.frontendUrl
-      let frontendHostname = new url.URL(frontendUrl).hostname
-      let frontendProtocol = new url.URL(frontendUrl).protocol
-      if (res.items)
-      for (let is in res.items) {
-        let s = res.items[is]
+  k8.api.v1.ns(namespace).services.get({}).then(function(res) {
+    let services = {}
+    let master = config.k8Api.url
+    let masterHostname = new url.URL(master).hostname
+    let node = config.k8Api.node
+    let frontendUrl = config.app.frontendUrl
+    let frontendHostname = new url.URL(frontendUrl).hostname
+    let frontendProtocol = new url.URL(frontendUrl).protocol
+    if (res.body && res.body.items)
+      for (let is in res.body.items) {
+        let s = res.body.items[is]
         let service = {
           name: s.metadata.name,
           namespace: s.metadata.namespace,
@@ -329,8 +333,9 @@ function getServiceInfo(namespace, next, {details = false} = {}) {
         else
           services[service.name]=[service]
       }
-      next(null, services)
-    }
+    next(null, services)
+  }, function(err) {
+    next(err, null)
   })
 }
 

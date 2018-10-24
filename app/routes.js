@@ -108,32 +108,25 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
             }
             if (podIp && ready && podInfo.status.phase == 'Running') { // we have a valid and running pod
               if (cconf.execCommand) {
-                if (k8.ns(cconf.namespace).pod(podName).exec) {
-                  k8.ns(cconf.namespace).pod(podName).exec.post({ qs: {
-                    command: cconf.execCommand,
-                    stdin: false,
-                    stderr: false,
-                    stdout: false,
-                    tty: false
-                  } }, function(err, value) {
-                    if (err) {
-                      logger.warn(`command ${stringify(execCommand)} on pod ${podName} failed ${stringify(err)}`)
-                      components.evalHtmlTemplate("failedCommand.html", {
-                        podName: podName,
-                        command: stringify(cconf.execCommand),
-                        error: err,
-                        target: target
-                      }, function(err, templateHtml) {
-                        res.status(500).send(templateHtml)
-                      })
-                    } else {
-                      res.redirect(302, target);
-                    }
-                  })
-                } else {
-                  logger.warn(`command ${stringify(execCommand)} on pod ${podName} not yet implemented (should update kubernetes-client)`)
+                k8.api.v1.ns(cconf.namespace).pod(podName).exec.post({ qs: {
+                  command: cconf.execCommand,
+                  stdin: false,
+                  stderr: true,
+                  stdout: true,
+                  tty: false
+                } }).then(function(value){
                   res.redirect(302, target);
-                }
+                }, function(err) {
+                  logger.warn(`command ${stringify(execCommand)} on pod ${podName} failed ${stringify(err)}`)
+                  components.evalHtmlTemplate("failedCommand.html", {
+                    podName: podName,
+                    command: stringify(cconf.execCommand),
+                    error: err,
+                    target: target
+                  }, function(err, templateHtml) {
+                    res.status(500).send(templateHtml)
+                  })
+                })
               } else {
                 res.redirect(302, target);
               }
@@ -211,18 +204,18 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
     var podName = req.params.podname;
     var podInfo = components.infoForPodName(podName)
     if (podInfo.user && loggedUsername === podInfo.user) {
-      k8.ns(cconf.namespace).pods.get({ name: podName }, function (err, result) {
-        if (!err) {
-          res.type('application/vnd.api+json').json({data:{ id: podName,
-                                     type: 'pod',
-                                     attributes: {
-                                       data: result
-                                     }
-                                   }
-                             }, null, 2);
-        } else res.type('application/vnd.api+json').json({errors:[{
+      k8.api.v1.ns(cconf.namespace).pod(podName).get().then(function (result) {
+        res.type('application/vnd.api+json').json({data:{ id: podName,
+                                                          type: 'pod',
+                                                          attributes: {
+                                                            data: result.body
+                                                          }
+                                                        }
+                                                  }, null, 2);
+      }, function(err) {
+        res.type('application/vnd.api+json').json({errors:[{
           id: 'no pod',
-          detail: `error getting info onn pod ${podName}`,
+          detail: `error getting info on pod ${podName}`,
           data: err
         }]});
       });

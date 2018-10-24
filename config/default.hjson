@@ -29,6 +29,7 @@ usersettings_redis: {
   host: "user-settings-db-redis-master"
 }
 k8Api: {
+  kubeconfig: "kube-certs/config"
   url: "https://labdev3-nomad.esc.rzg.mpg.de:6443"
   node: "labdev3-nomad.esc.rzg.mpg.de"
   ca: "kube-certs/ca.crt"

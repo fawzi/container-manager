@@ -342,22 +342,28 @@ echo "    pushd kube-certs"
 echo "  elif [ -e ../kube-certs ] ; then"
 echo "    pushd ../kube-certs"
 echo "  elif [ -e ~/.minikube ] ; then"
-echo "    pushd  ~/.minikube"
+echo "    mkdir -p ./kube-certs"
+echo "    pushd  kube-certs"
+echo "    cp ~/.minikube/ca.crt ~/.minikube/client.crt ~/.minikube/client.key ."
+echo "    sed \"s|$HOME/.minikube|/usr/src/app/kube-certs|g\" ~/.kube/config > config"
+if [ -z "$KUBERNETES_SERVER_URL" ] ; then
+    echo "    echo https://\$(minikube ip):8443 > server.url"
+else
+    echo "    echo \"$KUBERNETES_SERVER_URL\" > server.url"
+fi
+if [ -z "$KUBERNETES_NODE" ] ; then
+    echo "    echo \$(minikube ip) >node.addr"
+else
+    echo "    echo \"$KUBERNETES_NODE\" > node.addr"
+fi
 echo "  else"
 echo "    pushd ."
 echo "  fi"
 
-if [ -z "$KUBERNETES_SERVER_URL" -a -e "$HOME/.minikube" ] ; then
-    KUBERNETES_SERVER_URL="https://$(minikube ip):8443"
-fi
-if [ -z "$KUBERNETES_NODE" -a -e "$HOME/.minikube" ] ; then
-    KUBERNETES_NODE="$(minikube ip)"
-fi
-
 if [ -n "$KUBERNETES_SERVER_URL" ]; then
-    echo "  kubectl create secret generic kube-certs --from-file=ca.crt=ca.crt --from-file=client.crt=client.crt --from-file=client.key=client.key --from-literal=server.url=\"$KUBERNETES_SERVER_URL\" --from-literal=node.addr=\"$KUBERNETES_NODE\""
+    echo "  kubectl create secret generic kube-certs --from-file=ca.crt=ca.crt --from-file=client.crt=client.crt --from-file=client.key=client.key --from-literal=server.url=\"$KUBERNETES_SERVER_URL\" --from-literal=node.addr=\"$KUBERNETES_NODE\" --from-file=config=config"
 else
-    echo "  kubectl create secret generic kube-certs --from-file=ca.crt=ca.crt --from-file=client.crt=client.crt --from-file=client.key=client.key --from-file=server.url=server.url --from-file=node.addr=node.addr"
+    echo "  kubectl create secret generic kube-certs --from-file=ca.crt=ca.crt --from-file=client.crt=client.crt --from-file=client.key=client.key --from-file=server.url=server.url --from-file=node.addr=node.addr --from-file=config=config"
 fi
 echo "  popd"
 echo "# create secret with web certificates"

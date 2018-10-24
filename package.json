@@ -39,7 +39,7 @@
     "jade": "1.11.0",
     "js-yaml": "^3.10.0",
     "json-stringify-safe": "^5.0.1",
-    "kubernetes-client": "^3.18.1",
+    "kubernetes-client": "^6.3.0",
     "memory-store": "0.0.1",
     "mongoose": "^4.9.5",
     "morgan": "~1.7.0",
