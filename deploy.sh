@@ -29,6 +29,9 @@ do
           buildDocker=""
           updateDeploy=1
           ;;
+      --no-push)
+          noPush=1
+          ;;
       --secret-web-certs)
           shift
           secretWebCerts=${1:-web-certs}
@@ -50,7 +53,7 @@ do
           chownRoot=$1
           ;;
       *)
-          echo "usage: $0 [--debug] [--tls] [--nomad-root <pathToNomadRoot>] [--chown-root <pathForPrometheusVolumes>] [--env <NODE_ENV_VALUE>] [--docker-only] [--docker-skip] [--target-hostname hostname] [--secret-web-certs <secretName>]  [--always-pull]"
+          echo "usage: $0 [--debug] [--tls] [--nomad-root <pathToNomadRoot>] [--chown-root <pathForPrometheusVolumes>] [--env <NODE_ENV_VALUE>] [--docker-only] [--docker-skip] [--target-hostname hostname] [--secret-web-certs <secretName>]  [--always-pull] [--no-push]"
           echo
           echo "Env variables: NODE_ENV, target_hostname, nomadRoot"
           echo "Examples:"
@@ -68,7 +71,9 @@ version=$(git describe --tags --always --dirty)
 name="analytics-toolkit.nomad-coe.eu:5509/nomadlab/nomad-container-manager:$version"
 if [ -n "$buildDocker" ] ; then
     docker build -t $name .
-    docker push $name
+    if [ -z "$noPush" ] ; then
+        docker push $name
+    fi
 fi
 if [ -n "$alwaysPull" ] ; then
     pullPolicy=Always
