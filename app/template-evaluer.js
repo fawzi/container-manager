@@ -1,7 +1,6 @@
 const yaml = require('js-yaml')
 const logger = require('./logger')
 const fs = require('fs')
-const k8D = require('./k8-data')
 const stringify = require('json-stringify-safe')
 const components = require('./components')
 
@@ -27,10 +26,12 @@ exports.templateEvaluer = function(args) {
     iarg += 1
     if (arg == '--help') {
       console.log(usage)
+      process.exit(0)
       return;
     } else if (arg == '--template') {
       if (iarg >= args.length) {
         console.log(`Expected in file after --template, ${usage}`)
+        process.exit(1)
         return;
       }
       inFile = args[iarg]
@@ -38,6 +39,7 @@ exports.templateEvaluer = function(args) {
     } else if (arg == '--replacements') {
       if (iarg >= args.length) {
         console.log(`Expected a replacements file after --replacements, ${usage}`)
+        process.exit(1)
         return;
       }
       let repl = yaml.safeLoad(fs.readFileSync(args[iarg]))
@@ -46,19 +48,21 @@ exports.templateEvaluer = function(args) {
     } else if (arg == '--out-file') {
       if (iarg >= args.length) {
         console.log(`Expected out file after --out-file, ${usage}`)
+        process.exit(1)
         return;
       }
       outFile = args[iarg]
       iarg += 1
     } else {
       console.log(`unexpected argument ${arg}, ${usage}`)
+      process.exit(1)
       return;
     }
   }
   if (inFile.length > 0) {
     let inF = fs.readFileSync(inFile, {encoding:'utf8'})
     let outF = components.templatize(inF)(replacements)
-    if (outFile.lenght > 0)
+    if (outFile.length > 0)
       fs.writeFileSync(outFile, outF, { encoding: 'utf8'})
     else
       console.log(outF)

@@ -1,10 +1,15 @@
 k8component: {
   image: {
-    name: remotevis
+    imageType: remotevis
     subtype: default1
     image: "labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/notebook-jupyter-libatoms-tutorial",
     port: 8809,
-    prefix: "/jupyter",
+    prefix: "/remotevis",
     templatePath: "kube/remoteVisTemplate.yaml"
+  }
+  entryPoint: {
+    redirectTarget: "{{prefix}}/vnc.html"
+    execCommand: []
+    exclusiveStartPoint: true
   }
 }

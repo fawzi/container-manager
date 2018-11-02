@@ -1,7 +1,6 @@
 k8component: {
   templatePath: "kube/jupyterTemplate.yaml"
   image: {
-    name: jupyter
     imageType: jupyter
     imageSubtype: default1
     subType: default1 

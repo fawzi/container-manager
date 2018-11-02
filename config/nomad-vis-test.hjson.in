@@ -1,0 +1,8 @@
+session_redis: {
+  port: {{analytics-session-db-redis-master.0.ports.0.nodePort}}
+  host: {{analytics-session-db-redis-master.0.nodes.[0]}}
+}
+usersettings_redis: {
+  port: {{user-settings-db-redis-master.0.ports.0.nodePort}}
+  host: {{user-settings-db-redis-master.0.nodes.[0]}}
+}

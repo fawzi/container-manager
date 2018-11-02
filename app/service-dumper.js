@@ -30,10 +30,12 @@ exports.serviceDumper = function(args) {
     iarg += 1
     if (arg == '--help') {
       console.log(usage)
+      process.exit(0)
       return;
     } else if (arg == '--in-file') {
       if (iarg >= args.length) {
         console.log(`Expected in file after --in-file, ${usage}`)
+        process.exit(1)
         return;
       }
       inFile = args[iarg]
@@ -41,6 +43,7 @@ exports.serviceDumper = function(args) {
     } else if (arg == '--out-file') {
       if (iarg >= args.length) {
         console.log(`Expected out file after --out-file, ${usage}`)
+        process.exit(1)
         return;
       }
       outFile = args[iarg]
@@ -48,12 +51,14 @@ exports.serviceDumper = function(args) {
     } else if (arg == '--namespace') {
       if (iarg >= args.length) {
         console.log(`Expected namespace after --namespace, ${usage}`)
+        process.exit(1)
         return;
       }
       namespace = args[iarg]
       iarg += 1
     } else {
       console.log(`unexpected argument ${arg}, ${usage}`)
+      process.exit(1)
     }
   }
   if (inFile.length > 0) {
@@ -64,9 +69,10 @@ exports.serviceDumper = function(args) {
       services = inF.services
   }
   k8D.getServiceInfo(namespace, function(err, ss){
-    if (err)
+    if (err) {
       logger.warn(`error getting services for namespace ${namespace}`)
-    else {
+      process.exit(1)
+    } else {
       let sss = ss
       if (services.length != 0){
         sss = {}

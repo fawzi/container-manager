@@ -20,7 +20,8 @@ function main() {
   var cmds = []
   const usage = `node ${args[1]} [-h|--help] [--image-type [beaker|jupyter|creedo|remotevis]] [webserver|watcher|apiserver]
 
-  node ${args[1]} serviceDumper <serviceListFile>
+  node ${args[1]} serviceDumper [--help <serviceListFile>...]
+  node ${args[1]} templateEvaluer [--help ...]
     `
   var imageType = undefined
   if (iarg < args.length) {
