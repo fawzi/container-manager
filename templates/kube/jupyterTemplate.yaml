@@ -11,6 +11,7 @@ metadata:
 spec:
   imagePullSecrets:
   - name: garching-kube
+  restartPolicy: Never
   containers:
   - image: "{{image}}"
     name: "{{imageType}}"
@@ -36,7 +37,7 @@ spec:
     - mountPath: "/data/shared"
       name: "shared-data-volume"
       readOnly: true
-    - mountPath: "/data/shared/{{user}}"
+    - mountPath: "/data/private/myshared"
       name: "my-shared-data-volume"
     readinessProbe:
       httpGet:

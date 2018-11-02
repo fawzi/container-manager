@@ -5,7 +5,7 @@ k8component: {
     imageType: jupyter
     imageSubtype: default1
     subType: default1 
-    image: "analytics-toolkit.nomad-coe.eu:5509/nomadlab/jupyter-image:0.999"
+    image: "analytics-toolkit.nomad-coe.eu:5509/nomadlab/jupyter-image:0.999.1"
     port: 8888,
     prefix: "/jupyter",
     healthPath: "/jupyter"
@@ -15,10 +15,9 @@ k8component: {
     liveDelay: 15
     livePeriod: 30
   }
-  "entryPoint": {
-    "path": "/jupyter/entrypoint"
-    "uriRe": "/jupyter(/.*)",
-    "redirectTarget": "{{prefix}}/tree?",
-    "exclusiveStartPoint": false
-  },
+  entryPoint: {
+    redirectTarget: "{{prefix}}/notebooks/{{cmdOutTrimmed}}"
+    execCommand: ["/usr/src/localCopy.sh", "/data/private", "/data/private/external", "/data/shared", "{{path1}}" ]
+    exclusiveStartPoint: true
+  }
 }

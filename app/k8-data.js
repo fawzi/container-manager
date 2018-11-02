@@ -287,6 +287,43 @@ function resolvePod(repl, next) {
   }
 }
 
+function guaranteeResolvePod(repl, res, next){
+  resolvePod(repl, function (err, target) {
+    if (err) {
+      if ((err.error === 'no ip' || err.error === 'not ready') &&
+          err.status && (err.status.phase === 'Pending' || err.status.phase === 'Running')) {
+        let error_detail = ''
+        if (!err.secondsSinceCreation || err.secondsSinceCreation > 15)
+          error_detail = stringify(err, null, 2)
+        let repl = {
+          refreshEachS: config.app.pageReloadTime,
+          error_detail: error_detail
+        }
+        components.evalHtmlTemplate(
+          'reloadMsg.html', repl,
+          function(err, pageHtml) {
+            if (res && res.send)
+              res.send(pageHtml)
+          })
+        return;
+      } else if (err.error === 'too many containers') {
+        components.evalHtmlTemplate("maxContainers.html", {
+          pods: pods
+        }, function(err, errorHtml) {
+          repl.status(503).send(errorHtml)
+        })
+      } else {
+        logger.error(`error starting container ${repl.podName}: ${stringify(err)}`)
+        let errorHtml = components.getHtmlErrorTemplate(err, "Error starting container")
+        if (res && res.status && res.send)
+          res.status(500).send(errorHtml)
+      }
+    } else {
+      next(target);
+    }
+  })
+}
+
 
 
 function deletePod(podName, next) {
@@ -346,6 +383,7 @@ module.exports = {
   guaranteeDir: guaranteeDir,
   guaranteeUserDir: guaranteeUserDir,
   resolvePod: resolvePod,
+  guaranteeResolvePod: guaranteeResolvePod,
   deletePod: deletePod,
   getServiceInfo: getServiceInfo
 }

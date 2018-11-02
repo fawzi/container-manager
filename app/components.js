@@ -294,6 +294,23 @@ function cachedReplacements(req, next) {
   }
 }
 
+// cached replacements replying with error if not available
+function guaranteeCachedReplacements(req,res,next) {
+  cachedReplacements(req, function(err, repl) {
+    //logger.debug(`replacements available after ${(Date.now()-start)/1000.0}s`)
+    if (err) {
+      logger.error(`no replacements for ${userID} in %{path}`)
+      res.send(500, components.getHtmlErrorTemplate({
+        error:"No replacements",
+        msg: `lookup without visiting the entry point ${config.k8component.entryPoint.path} (${stringify(err)})`
+      }))
+    } else {
+      next(repl)
+    }
+  })
+}
+
+
 function templateForImage(repl, next) {
   evalTemplate(repl['templatePath'], repl, next)
 }
@@ -307,6 +324,7 @@ module.exports = {
   replacementsForUser: replacementsForUser,
   selfUserName: selfUserName,
   cachedReplacements: cachedReplacements,
+  guaranteeCachedReplacements: guaranteeCachedReplacements,
   podNameForRepl: podNameForRepl,
   infoForPodName: infoForPodName,
   templateForImage: templateForImage,

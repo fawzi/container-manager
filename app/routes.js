@@ -28,7 +28,7 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
 
   let cconf = config.k8component
   let entryPath = components.templatize(cconf.entryPoint.path)(components.baseRepl)
-  logger.debug(`entryPoint: ${entryPath}`)
+  const commandsBase = components.templatize(cconf.commands.path)(components.baseRepl)
 
   app.get(entryPath, ensureLoggedIn(loginUri), bodyParser.json(), bodyParser.urlencoded({extended:true}), function(req, res){
     function isEmpty(obj) { 
@@ -61,7 +61,7 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
         req.session.replacements[cconf.image.imageType] = repl
         const podName = components.podNameForRepl(repl)
         k8D.getOrCreatePod(podName, repl, true, function (err, podInfo) {
-          let target = components.templatize(cconf.entryPoint.redirectTarget)(repl)
+          let target = `${commandsBase}/command-exec`
           logger.info(`entryPoint got pod ${stringify(podInfo)}`)
           if (err) {
             if (err.error  === 'too many containers') {
@@ -107,29 +107,7 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
               }
             }
             if (podIp && ready && podInfo.status.phase == 'Running') { // we have a valid and running pod
-              if (cconf.execCommand) {
-                k8.api.v1.ns(cconf.namespace).pod(podName).exec.post({ qs: {
-                  command: cconf.execCommand,
-                  stdin: false,
-                  stderr: true,
-                  stdout: true,
-                  tty: false
-                } }).then(function(value){
-                  res.redirect(302, target);
-                }, function(err) {
-                  logger.warn(`command ${stringify(execCommand)} on pod ${podName} failed ${stringify(err)}`)
-                  components.evalHtmlTemplate("failedCommand.html", {
-                    podName: podName,
-                    command: stringify(cconf.execCommand),
-                    error: err,
-                    target: target
-                  }, function(err, templateHtml) {
-                    res.status(500).send(templateHtml)
-                  })
-                })
-              } else {
-                res.redirect(302, target);
-              }
+              res.redirect(302, target);
             } else if (podInfo.status.phase === 'Pending' || podInfo.status.phase === 'Running') {
               let error_detail = ''
               let secondsSinceCreation = (Date.now() - Date.parse(podInfo.metadata.creationTimestamp))/ 1000.0
@@ -162,7 +140,53 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
     })
   });
 
-  const commandsBase = components.templatize(cconf.commands.path)(components.baseRepl)
+
+  app.get(commandsBase + "/command-exec", ensureLoggedIn(loginUri), bodyParser.json(), function(req, res){
+    components.guaranteeCachedReplacements(req, res, function(repl) {
+      let targetTemplateStr = cconf.entryPoint.redirectTarget
+      let targetTemplate = components.templatize(targetTemplateStr)
+      k8D.guaranteeResolvePod(repl, res, function(podInfo){
+        if (cconf.entryPoint.execCommand) {
+          let cmd = cconf.entryPoint.execCommand.map(function (x) {
+            if (x.indexOf('{{') == -1)
+              return x
+            else
+              return components.templatize(x)(repl)
+          })
+          k8.api.v1.ns(cconf.namespace).pod(repl.podName).exec.post({ qs: {
+            command: cmd,
+            stdin: false,
+            stderr: true,
+            stdout: true,
+            tty: false
+          } }).then(function(value){
+            let newRepl = Object.create(repl)
+            newRepl.cmdOut = value.messages.filter(function(x){ return x.channel == "stdout" }).map(function(x){ return x.message }).join("")
+            newRepl.cmdOutTrimmed = newRepl.cmdOut.trim()
+            newRepl.cmdBody = value.body
+            newRepl.cmdBodyTrimmed = newRepl.cmdBody.trim()
+            targetTemplate(newRepl)
+            let target = targetTemplate(newRepl)
+            res.redirect(302, target);
+          }).catch(function(err) {
+            logger.warn(`command ${stringify(cmd)} on pod ${repl.podName} failed ${stringify(err)}`)
+            let target = targetTemplate(repl)
+            components.evalHtmlTemplate("failedCommand.html", {
+              podName: podName,
+              command: stringify(cmd),
+              error: err,
+              target: target
+            }, function(err, templateHtml) {
+              res.status(500).send(templateHtml)
+            })
+          })
+        } else {
+          let target = targetTemplate(repl)
+          res.redirect(302, target);
+        }
+      })
+    })
+  })
 
   app.get(commandsBase + "/view-containers", ensureLoggedIn(loginUri), bodyParser.urlencoded({extended: true}), function(req, res){
     let user = components.selfUserName(req)
