@@ -2,6 +2,7 @@ const yaml = require('js-yaml')
 const logger = require('./logger')
 const fs = require('fs')
 const k8D = require('./k8-data')
+const writeFileAtomicSync = require('write-file-atomic').sync
 
 function mergeServices(s1,s2) {
   for (let k in s2) {
@@ -85,7 +86,7 @@ exports.serviceDumper = function(args) {
       }
       let res = yaml.safeDump(sss, {sortKeys: true})
       if (outFile.length > 0)
-        fs.writeFileSync(outFile, res, {encoding:'utf8'})
+        writeFileAtomicSync(outFile, res, {encoding:'utf8'})
       else
         console.log(res)
       process.exit(0)

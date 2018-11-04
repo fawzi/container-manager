@@ -3,6 +3,7 @@ const logger = require('./logger')
 const fs = require('fs')
 const stringify = require('json-stringify-safe')
 const components = require('./components')
+const writeFileAtomicSync = require('write-file-atomic').sync
 
 function mergeServices(s1,s2) {
   for (let k in s2) {
@@ -63,7 +64,7 @@ exports.templateEvaluer = function(args) {
     let inF = fs.readFileSync(inFile, {encoding:'utf8'})
     let outF = components.templatize(inF)(replacements)
     if (outFile.length > 0)
-      fs.writeFileSync(outFile, outF, { encoding: 'utf8'})
+      writeFileAtomicSync(outFile, outF, { encoding: 'utf8'})
     else
       console.log(outF)
   }
