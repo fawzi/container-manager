@@ -378,6 +378,82 @@ echo "  kubectl create secret generic ${secretWebCerts} --from-file=key.pem=key.
 echo "  popd"
 echo
 
+echo "# create cron job updating info on services"
+if [ -n updateDeploy ]; then
+targetF=service-dumper.yaml
+cat > "$targetF" <<EOF
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: hello
+spec:
+  schedule: "*/15 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          metadata:
+            labels:
+              app: nomad-container-manager-dumper
+          imagePullSecrets:
+          - name: garching-kube
+          restartPolicy: OnFailure
+          containers:
+          - name: dumper
+            image: $name
+            imagePullPolicy: $pullPolicy
+            command:
+            - node
+            - app.js
+            - serviceDumper
+            - --out-file
+            - /services-info/$target_hostname.services.yaml
+            env:
+            - name: KUBERNETES_SERVER_URL
+              valueFrom:
+                secretKeyRef:
+                  name: kube-certs
+                  key: server.url
+            - name: KUBERNETES_NODE
+              valueFrom:
+                secretKeyRef:
+                  name: kube-certs
+                  key: node.addr
+            - name: NODE_ENV
+              value: "$NODE_ENV"
+            - name: NODE_APP_INSTANCE
+              value: "$imageType"
+            volumeMounts:
+            - mountPath: "/services-info"
+              name:  services-info
+EOF
+    if [ -n "$debug" ] ; then
+        cat >> $targetF <<EOF
+            - mountPath: "/usr/src/app"
+              name: app-source
+EOF
+    fi
+    cat >> $targetF <<EOF
+            - mountPath: "/usr/src/app/kube-certs"
+              name: kube-certs
+              readOnly: true
+          volumes:
+          - name: kube-certs
+            secret:
+              secretName: kube-certs
+          - name: services-info
+            hostPath:
+              path: "$nomadRoot/servers/$target_hostname/analytics/services-info"
+EOF
+    if [ -n "$debug" ] ; then
+        cat >> $targetF <<EOF
+          - name: app-source
+            hostPath:
+              path: "$nomadRoot/servers/$target_hostname/analytics/$imageType"
+EOF
+    fi
+fi
+
 for imageType in beaker jupyter creedo remotevis ; do
 
 echo "## $imageType Initial setup: create container manager service"
