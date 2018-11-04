@@ -453,6 +453,7 @@ EOF
 EOF
     fi
 fi
+echo "  kubectl create -f $targetF"
 
 for imageType in beaker jupyter creedo remotevis ; do
 
