@@ -111,8 +111,16 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
             } else if (podInfo.status.phase === 'Pending' || podInfo.status.phase === 'Running') {
               let error_detail = ''
               let secondsSinceCreation = (Date.now() - Date.parse(podInfo.metadata.creationTimestamp))/ 1000.0
+              const error = {
+                error: "not ready",
+                msg: "pod not yet ready",
+                status: podInfo.status,
+                host: podIp,
+                pod: podInfo,
+                secondsSinceCreation: secondsSinceCreation
+              }
               if (!secondsSinceCreation || secondsSinceCreation > 15)
-                error_detail = stringify(err, null, 2)
+                error_detail = stringify(error, null, 2)
               let repl = {
                 refreshEachS: config.app.pageReloadTime,
                 error_detail: error_detail
