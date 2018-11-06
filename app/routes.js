@@ -175,6 +175,7 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
             newRepl.cmdBodyTrimmed = newRepl.cmdBody.trim()
             targetTemplate(newRepl)
             let target = targetTemplate(newRepl)
+            logger.info(`cmd ${stringify(cmd)} will redirect to ${stringify(target)}`)
             res.redirect(302, target);
           }).catch(function(err) {
             logger.warn(`command ${stringify(cmd)} on pod ${repl.podName} failed ${stringify(err)}`)
