@@ -442,7 +442,7 @@ EOF
               secretName: kube-certs
           - name: services-info
             hostPath:
-              path: "$nomadRoot/servers/$target_hostname/analytics/services-info"
+              path: "$nomadRoot/servers/services-info"
 EOF
     if [ -n "$debug" ] ; then
         cat >> $targetF <<EOF
