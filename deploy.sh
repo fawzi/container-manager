@@ -385,16 +385,15 @@ cat > "$targetF" <<EOF
 apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
-  name: hello
+  name: service-dumper
+  labels:
+    app: nomad-container-manager-dumper
 spec:
   schedule: "*/15 * * * *"
   jobTemplate:
     spec:
       template:
         spec:
-          metadata:
-            labels:
-              app: nomad-container-manager-dumper
           imagePullSecrets:
           - name: garching-kube
           restartPolicy: OnFailure
@@ -449,7 +448,7 @@ EOF
         cat >> $targetF <<EOF
           - name: app-source
             hostPath:
-              path: "$nomadRoot/servers/$target_hostname/analytics/$imageType"
+              path: "$nomadRoot/servers/$target_hostname/analytics/service-dumper"
 EOF
     fi
 fi
