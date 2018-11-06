@@ -2,7 +2,7 @@
   "name": "container-manager",
   "version": "0.1.0",
   "description": "Container manager",
-  "license": "Apache License, Version 2.0",
+  "license": "Apache-2.0",
   "author": {
     "name": "Ankit Kariryaa"
   },
@@ -11,6 +11,10 @@
       "name": "Fawzi Mohamed"
     }
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.mpcdf.mpg.de/nomad-lab/container-manager.git"
+  },
   "keywords": [
     "kubernetes",
     "user-management"
