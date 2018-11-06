@@ -290,7 +290,7 @@ function cachedReplacements(req, next) {
       next(null, newRepl)
     })
   } else {
-    next({ message: `no replacements defined, you need to visit first the entry point ${cconf.entryPoint.path}` }, undefined)
+    next({ message: `no replacements defined, you need to visit first the entry point ${cconfig.entryPoint.path}` }, undefined)
   }
 }
 
