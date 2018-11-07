@@ -70,6 +70,9 @@ chownRoot=${chownRoot:-$nomadRoot/servers/$target_hostname}
 version=$(git describe --tags --always --dirty)
 name="analytics-toolkit.nomad-coe.eu:5509/nomadlab/nomad-container-manager:$version"
 if [ -n "$buildDocker" ] ; then
+    if [ -n "$alwaysPull" ] ; then
+        docker pull node:carbon
+    fi
     docker build -t $name .
     if [ -z "$noPush" ] ; then
         docker push $name
