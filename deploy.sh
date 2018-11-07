@@ -385,18 +385,20 @@ echo "# create cron job updating info on services"
 if [ -n updateDeploy ]; then
 targetF=service-dumper.yaml
 cat > "$targetF" <<EOF
-apiVersion: batch/v1beta1
-kind: CronJob
+apiVersion: v1
+kind: Pod
+#apiVersion: batch/v1beta1
+#kind: CronJob
 metadata:
   name: service-dumper
   labels:
     app: nomad-container-manager-dumper
 spec:
-  schedule: "*/15 * * * *"
-  jobTemplate:
-    spec:
-      template:
-        spec:
+#  schedule: "*/15 * * * *"
+#  jobTemplate:
+#    spec:
+#      template:
+#        spec:
           imagePullSecrets:
           - name: garching-kube
           restartPolicy: OnFailure
@@ -455,7 +457,7 @@ EOF
 EOF
     fi
 fi
-echo "  kubectl create -f $targetF"
+echo "  kubectl apply -f $targetF"
 
 for imageType in beaker jupyter creedo remotevis ; do
 
