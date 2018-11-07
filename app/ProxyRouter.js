@@ -19,7 +19,7 @@ ProxyRouter.prototype.lookup = function(req, res, userID, isWebsocket, path, nex
     //logger.debug(`replacements available after ${(Date.now()-start)/1000.0}s`)
     if (err) {
       logger.error(`no replacements for ${userID} in %{path}`)
-      res.send(500, components.getHtmlErrorTemplate({
+      res.status(500).send(components.getHtmlErrorTemplate({
         error:"No replacements",
         msg: `lookup without visiting the entry point ${config.k8component.entryPoint.path} (${stringify(err)})`
       }))
