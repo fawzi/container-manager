@@ -1,8 +1,30 @@
-session_redis: {
-  port: {{analytics-session-db-redis-master.0.ports.0.nodePort}}
-  host: {{analytics-session-db-redis-master.0.nodes.[0]}}
-}
-usersettings_redis: {
-  port: {{user-settings-db-redis-master.0.ports.0.nodePort}}
-  host: {{user-settings-db-redis-master.0.nodes.[0]}}
+{
+  app: {
+    ssl: {
+      key: "web-certs/key.pem"
+      cert: "web-certs/cert.pem"
+    }
+    frontendUrl: "https://labdev-nomad.esc.rzg.mpg.de"
+    debug: true
+  }
+  passport: {
+    strategy: "saml"
+    saml: {
+      path: "/login/callback"
+      entryPoint: "https://idp.nomad-coe.eu/idp/profile/SAML2/Redirect/SSO"
+      issuer: "https://labdev-nomad.esc.rzg.mpg.de/shibboleth"
+      identifierFormat: null
+      # logoutUrl: "https://idp.nomad-coe.eu/idp/profile/SAML2/Redirect/SSO"
+      # logoutCallback: undefined
+      acceptedClockSkewMs: -1
+    }
+  }
+  session_redis: {
+    port: {{analytics-session-db-redis-master.0.ports.0.nodePort}}
+    host: {{analytics-session-db-redis-master.0.nodes.[0]}}
+  }
+  usersettings_redis: {
+    port: {{user-settings-db-redis-master.0.ports.0.nodePort}}
+    host: {{user-settings-db-redis-master.0.nodes.[0]}}
+  }
 }
