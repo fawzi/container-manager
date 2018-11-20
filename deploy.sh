@@ -594,10 +594,6 @@ EOF
     fi
 fi
 
-echo "if ! kubectl get deployment nomad-container-manager-$imageType >& /dev/null ;  then"
-echo "  kubectl create --save-config -f container-manager-deploy-$imageType.yaml"
-echo "else"
-echo "  kubectl apply -f container-manager-deploy-$imageType.yaml"
-echo "fi"
+echo "kubectl apply -f container-manager-deploy-$imageType.yaml"
 echo
 done
