@@ -594,6 +594,6 @@ EOF
     fi
 fi
 
-echo "kubectl apply -f container-manager-deploy-$imageType.yaml"
+echo "  kubectl apply -f container-manager-deploy-$imageType.yaml"
 echo
 done
