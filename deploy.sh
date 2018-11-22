@@ -289,7 +289,7 @@ spec:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Recycle
   hostPath:
-    path: $nomadRoot/servers/$target_hostname/analytics/user-settings-redis-data
+    path: $nomadRoot/servers/$target_hostname/user-settings-redis-data
     type: Directory
 EOF
 
