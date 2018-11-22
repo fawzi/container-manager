@@ -184,7 +184,7 @@ function getOrCreatePod(podName, repl, shouldCreate, next) {
         next(error, null)
       } else if (pod.status && ['Error', 'Failed', 'Succeeded'].includes(pod.status.phase)) {
         if (shouldCreate) {
-          k8.api.v1.ns(config.k8component.namespace).pods.delete({ name: podName }).then(function (delResult) {
+          k8.api.v1.ns(config.k8component.namespace).pod(podName).delete().then(function (delResult) {
             logger.info(`Deleted stopped pod ${podName} to restart it`)
             createPod(podName, repl, next) // wait & return 'pod shutting down' instead?
           }, function(err) {
@@ -327,7 +327,7 @@ function guaranteeResolvePod(repl, res, next){
 
 
 function deletePod(podName, next) {
-  k8.api.v1.ns(config.k8component.namespace).pods.delete({ name: podName }).then(function (result) {
+  k8.api.v1.ns(config.k8component.namespace).pod(podName).delete().then(function (result) {
     resolveCache.set(podName, undefined)
     logger.info(`deleted pod ${podName}`)
     next(null, result.body)
