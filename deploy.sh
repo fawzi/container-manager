@@ -453,7 +453,7 @@ EOF
         cat >> $targetF <<EOF
           - name: app-source
             hostPath:
-              path: "$nomadRoot/servers/$target_hostname/analytics/service-dumper"
+              path: "$nomadRoot/servers/$target_hostname/service-dumper"
 EOF
     fi
 fi
@@ -582,7 +582,7 @@ EOF
         cat >> $targetF <<EOF
       - name: app-source
         hostPath:
-          path: "$nomadRoot/servers/$target_hostname/analytics/$imageType"
+          path: "$nomadRoot/servers/$target_hostname/$imageType-manager"
 EOF
     fi
     if [ -n "$secretWebCerts" ] ; then
