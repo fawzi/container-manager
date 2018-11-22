@@ -2,11 +2,11 @@ k8component: {
   image: {
     imageType: creedo
     imageSubtype: default1
-    image: "labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/creedo:v0.4.2-2017-09-29",
-    port: 8080,
-    prefix: "/Creedo",
+    image: "labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/creedo:v0.4.2-2017-09-29"
+    port: 8080
+    prefix: "/Creedo"
     healthPath: "/Creedo"
-    healthDelay: 5
+    healthDelay: 6
     healthPeriod: 5
     livePath: "/Creedo"
     liveDelay: 20
