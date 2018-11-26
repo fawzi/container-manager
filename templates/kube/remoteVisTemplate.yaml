@@ -11,7 +11,7 @@ spec:
   terminationGracePeriodSeconds: 5
   restartPolicy: Never
   containers:
-  - image: labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/nomadvis:v1.0.7
+  - image: labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/nomadvis:v1.0.8
     name: nomadvis
     command: ["bash"]
     args: ["/software/scripts/startup.sh"]

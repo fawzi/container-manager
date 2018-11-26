@@ -2,14 +2,14 @@ k8component: {
   image: {
     imageType: remotevis
     subtype: default1
-    image: "labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/nomadvis:v1.0.7",
+    image: "labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/nomadvis:v1.0.8",
     port: 8809,
     prefix: "/remotevis",
     templatePath: "kube/remoteVisTemplate.yaml"
   }
   entryPoint: {
     redirectTarget: "{{prefix}}/vnc.html"
-    execCommand: []
+    execCommand: ["bash", "-c", "echo {{path1}} | cut -c 2- > /tmp/datapid.log"]
     exclusiveStartPoint: true
   }
 }
