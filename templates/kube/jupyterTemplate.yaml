@@ -2,23 +2,23 @@
 apiVersion: "v1"
 kind: Pod
 metadata:
-  name: "{{podName}}"
+  name: "{{e podName}}"
   labels:
-    user: "{{user}}"
-    image-type: "{{imageType}}"
-    image-subtype: "{{imageSubtype}}"
-    replacements-checksum: "{{replacementsChecksum}}"
+    user: "{{e user}}"
+    image-type: "{{e imageType}}"
+    image-subtype: "{{e imageSubtype}}"
+    replacements-checksum: "{{e replacementsChecksum}}"
 spec:
   imagePullSecrets:
   - name: garching-kube
   restartPolicy: Never
   containers:
-  - image: "{{image}}"
-    name: "{{imageType}}"
+  - image: "{{e image}}"
+    name: "{{e imageType}}"
     command: ["start-notebook.sh"]
     args: ["--NotebookApp.token=\"\"",  "--NotebookApp.base_url=/jupyter", "--NotebookApp.allow_origin=*", "--NotebookApp.notebook_dir=/data/private/"]
     ports:
-    - containerPort: {{port}}
+    - containerPort: {{n port}}
       name: "main-port"
       protocol: "TCP"
     imagePullPolicy: "IfNotPresent"
@@ -41,26 +41,26 @@ spec:
       name: "my-shared-data-volume"
     readinessProbe:
       httpGet:
-        path: "{{healthPath}}"
-        port: {{port}}
-      initialDelaySeconds: {{healthDelay}}
-      periodSeconds: {{healthPeriod}}
+        path: "{{e healthPath}}"
+        port: {{n port}}
+      initialDelaySeconds: {{n healthDelay}}
+      periodSeconds: {{n healthPeriod}}
     livenessProbe:
       httpGet:
-        path: "{{livePath}}"
-        port: {{port}}
-      initialDelaySeconds: {{liveDelay}}
-      periodSeconds: {{livePeriod}}
+        path: "{{e livePath}}"
+        port: {{n port}}
+      initialDelaySeconds: {{n liveDelay}}
+      periodSeconds: {{n livePeriod}}
   volumes:
   - name: "parsed-data-volume"
-    hostPath: { "path": "{{nomadRoot}}/parsed" }
+    hostPath: { "path": "{{e nomadRoot}}/parsed" }
   - name: "raw-data-volume"
-    hostPath: { "path": "{{nomadRoot}}/raw-data"}
+    hostPath: { "path": "{{e nomadRoot}}/raw-data"}
   - name: "normalized-data-volume"
-    hostPath: { "path": "{{nomadRoot}}/normalized" }
+    hostPath: { "path": "{{e nomadRoot}}/normalized" }
   - name: "private-data-volume"
-    hostPath: { "path": "{{nomadRoot}}/user-data/private/{{user}}" }
+    hostPath: { "path": "{{e nomadRoot}}/user-data/private/{{e user}}" }
   - name: "shared-data-volume"
-    hostPath: { "path": "{{nomadRoot}}/user-data/shared" }
+    hostPath: { "path": "{{e nomadRoot}}/user-data/shared" }
   - name: "my-shared-data-volume"
-    hostPath: { "path": "{{nomadRoot}}/user-data/shared/{{user}}" }
+    hostPath: { "path": "{{e nomadRoot}}/user-data/shared/{{e user}}" }

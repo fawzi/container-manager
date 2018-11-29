@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: {{podName}}
+  name: "{{e podName}}"
   labels:
-    user: "{{user}}"
-    image-type: "{{imageType}}"
-    image-subtype: "{{imageSubtype}}"
-    replacements-checksum: "{{replacementsChecksum}}"
+    user: "{{e user}}"
+    image-type: "{{e imageType}}"
+    image-subtype: "{{e imageSubtype}}"
+    replacements-checksum: "{{e replacementsChecksum}}"
 spec:
   terminationGracePeriodSeconds: 5
   restartPolicy: Never
@@ -17,9 +17,9 @@ spec:
     args: ["/software/scripts/startup.sh"]
     env:
     - name: USERNAME
-      value: {{user}}
+      value: "{{e user}}"
     - name: DATAPID
-      value: {{datapid}}
+      value: "{{e datapid}}"
     volumeMounts:
     - mountPath: /data/test
       name: data-test
@@ -58,10 +58,10 @@ spec:
       path: /nomad/mcompo/CO2-CaO
   - name: data-shared
     hostPath:
-      path: /nomad/nomadlab/user-data/shared/{{user}}
+      path: "/nomad/nomadlab/user-data/shared/{{e user}}"
   - name: data-private
     hostPath:
-      path: /nomad/nomadlab/user-data/private/{{user}}
+      path: "/nomad/nomadlab/user-data/private/{{e user}}"
   - name: nginx-volume
     hostPath:
       path: /etc/nginx/ssl

@@ -31,6 +31,19 @@ handlebars.registerHelper('prettyJson', function(object){
   return stringify(object, null, 2);
 });
 
+// guarantees an integer number
+handlebars.registerHelper('n', function(object){
+  return ~~object
+});
+
+// escapes so that the object can go in a double quote (") string
+handlebars.registerHelper('e', function(object){
+  let s = stringify(object)
+  if (!s.startsWith('"'))
+    s = stringify(s)
+  return new Handlebars.SafeString(s.slice(1, s.length-1))
+});
+
 // Create a template from the given string
 function templatize(str) {
   return handlebars.compile(str)
