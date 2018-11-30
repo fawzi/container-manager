@@ -35,7 +35,10 @@ module.exports = function (app, redirect, config, proxyServer, proxyRouter, k8, 
       for (var x in obj) { return false; }
       return true;
     }
-    extraArgs = Object.assign({},req.query)
+    var query = {}
+    if (cconf.entryPoint.replacementsFromQueryParameters)
+      query = req.query
+    extraArgs = Object.assign({},query)
     if (!isEmpty(extraArgs) && !extraArgs.imageSubtype)
       extraArgs.imageSubtype = `custom${compactSha.objectSha(extraArgs, prefix='').replace(/[-_]/g,'').slice(0,5).toLowerCase()}`
     extraArgs.path = req.url
