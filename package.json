@@ -4,11 +4,11 @@
   "description": "Container manager",
   "license": "Apache-2.0",
   "author": {
-    "name": "Ankit Kariryaa"
+    "name": "Fawzi Mohamed"
   },
   "contributors": [
     {
-      "name": "Fawzi Mohamed"
+      "name": "Ankit Kariryaa"
     }
   ],
   "repository": {
