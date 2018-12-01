@@ -99,9 +99,9 @@ function jsonApiPods(labels, next, {details = true}={}) {
 /// Guarantees the existence of a directory
 function guaranteeDir(path, next) {
   fs.access(path, fs.constants.F_OK | fs.constants.R_OK, (err) => {
-    if(err){
+    if (err) {
       fs.mkdir(path, parseInt('2775', 8), (err) => {
-        if(err) throw err;
+        if(err && err.code != 'EEXIST') throw err;
         fs.chown(path, 1000, 1000, (err) => {
           if (err)
             logger.warn('Dir '+ path + ' created, error in chown: ' + stringify(err));
