@@ -567,6 +567,18 @@ EOF
           name: user-shared
         - mountPath: "/nomad/nomadlab/user-data/private"
           name: user-private
+        readinessProbe:
+          httpGet:
+            path: "/nmdalive"
+            port: 3003
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: "/nmdalive"
+            port: 3003
+          initialDelaySeconds: 30
+          periodSeconds: 30
       volumes:
       - name: kube-certs
         secret:
