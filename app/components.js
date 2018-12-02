@@ -24,7 +24,7 @@ for (k in br)
   baseRepl[k] = br[k];
 
 handlebars.registerHelper('json', function(object){
-        return new Handlebars.SafeString(stringify(object));
+        return new handlebars.SafeString(stringify(object));
 });
 
 handlebars.registerHelper('prettyJson', function(object){
@@ -41,7 +41,7 @@ handlebars.registerHelper('e', function(object){
   let s = stringify(object)
   if (!s.startsWith('"'))
     s = stringify(s)
-  return new Handlebars.SafeString(s.slice(1, s.length-1))
+  return new handlebars.SafeString(s.slice(1, s.length-1))
 });
 
 // Create a template from the given string
