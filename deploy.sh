@@ -559,6 +559,10 @@ EOF
           name: web-certs
 EOF
     fi
+    scheme=HTTP
+    if [ "$target_hostname" == "labdev-nomad" -o  "$target_hostname" == "labtest-nomad" ] ; then
+      scheme=HTTPS
+    fi
     cat >> $targetF <<EOF
         - mountPath: "/usr/src/app/kube-certs"
           name: kube-certs
@@ -571,12 +575,14 @@ EOF
           httpGet:
             path: "/nmdalive"
             port: 3003
+            scheme: "$scheme"
           initialDelaySeconds: 5
           periodSeconds: 10
         livenessProbe:
           httpGet:
             path: "/nmdalive"
             port: 3003
+            scheme: "$scheme"
           initialDelaySeconds: 30
           periodSeconds: 30
       volumes:
