@@ -495,11 +495,12 @@ EOF
 fi
 echo "  kubectl apply -f $targetF"
 
-for imageType in beaker jupyter creedo remotevis ; do
+for imageType in beaker jupyter creedo remotevis userapi watcher; do
 
-echo "## $imageType Initial setup: create container manager service"
-if [ -n updateDeploy ]; then
-cat >container-manager-service-$imageType.yaml <<HERE
+if [ "$imageType" != "watcher" ] ; then
+    echo "## $imageType Initial setup: create container manager service"
+    if [ -n updateDeploy ]; then
+        cat >container-manager-service-$imageType.yaml <<HERE
 kind: Service
 apiVersion: v1
 metadata:
@@ -514,12 +515,13 @@ spec:
     targetPort: 3003
   type: NodePort
 HERE
+    fi
+    echo "  kubectl create -f container-manager-service-$imageType.yaml"
 fi
-echo "  kubectl create -f container-manager-service-$imageType.yaml"
 
 if [ -n "$updateDeploy" ]; then
     targetF=container-manager-deploy-$imageType.yaml
-    cat >$targetF <<HERE
+    cat > $targetF <<HERE
 apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
@@ -545,13 +547,66 @@ spec:
       - name: nomad-container-manager
         image: $name
         imagePullPolicy: $pullPolicy
+        ports:
+        - containerPort: 3003
+HERE
+    if [ "$imageType" = "watcher" ]; then
+        cat >> $targetF <<HERE
+        command:
+        - npm
+        - start
+        - watcher
+HERE
+    elif [ "$imageType" = "userapi" ]; then
+        cat >> $targetF <<HERE
+        command:
+        - npm
+        - start
+        - apiserver
+        readinessProbe:
+          httpGet:
+            path: "/userapi"
+            port: 3003
+            scheme: "$scheme"
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: "/userapi"
+            port: 3003
+            scheme: "$scheme"
+          initialDelaySeconds: 30
+          periodSeconds: 30
+HERE
+    else
+        cat >> $targetF <<HERE
         command:
         - npm
         - start
         - webserver
-        ports:
-        - containerPort: 3003
+        readinessProbe:
+          httpGet:
+            path: "/nmdalive"
+            port: 3003
+            scheme: "$scheme"
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: "/nmdalive"
+            port: 3003
+            scheme: "$scheme"
+          initialDelaySeconds: 30
+          periodSeconds: 30
+HERE
+    fi
+    cat >> $targetF <<HERE
         env:
+        - name: MONGODB_URL
+          valueFrom:
+            secretKeyRef:
+              name: notebook-db-mongo-pwd
+              key: root-connect
         - name: SESSION_DB_PASSWORD
           valueFrom:
             secretKeyRef:
@@ -607,20 +662,6 @@ EOF
           name: user-shared
         - mountPath: "/nomad/nomadlab/user-data/private"
           name: user-private
-        readinessProbe:
-          httpGet:
-            path: "/nmdalive"
-            port: 3003
-            scheme: "$scheme"
-          initialDelaySeconds: 5
-          periodSeconds: 10
-        livenessProbe:
-          httpGet:
-            path: "/nmdalive"
-            port: 3003
-            scheme: "$scheme"
-          initialDelaySeconds: 30
-          periodSeconds: 30
       volumes:
       - name: kube-certs
         secret:
