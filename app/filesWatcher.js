@@ -155,7 +155,12 @@ module.exports = function(config, models){
       shortPath = "private/"
     shortPath += partialPath
     fs.readFile(path, 'utf8', function(err, contents) {
-      const tut = JSON.parse(contents);
+      var tut = {}
+      try {
+        tut = JSON.parse(contents);
+      } catch (err) {
+        logger.warn(`json parse error for file ${path}: ${stringify(err)}`)
+      }
       var title, authors, description;
       try {
         title = tut["cells"][0]["title"];
