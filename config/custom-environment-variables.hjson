@@ -11,6 +11,9 @@
     "cert": "KUBERNETES_CERT"
     "key":  "KUBERNETES_KEY"
   }
+  mongoDb: {
+    url: "MONGODB_URL"
+  }
   "session_redis": {
     "password": "SESSION_DB_PASSWORD"
   }

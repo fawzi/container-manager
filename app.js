@@ -81,7 +81,7 @@ function main() {
   var models
   if (watcherRequired || apiserverRequired) {
     const mongoose = require('mongoose');
-    mongoose.connect(config.mongoDb.url);
+    mongoose.connect(config.mongoDb.url, { useMongoClient: true });
     models = require('./app/models')(mongoose, config);
   }
   if (cmds.includes("watcher")) {

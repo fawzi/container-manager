@@ -244,28 +244,64 @@ if [ -n updateDeploy ]; then
     fi
     NOTEBOOK_MONGO_PASS=$(head -1 notebook-db-mongo-pwd.txt)
 
-# check how to use secret
-    cat >notebook-mongo-helm-values.yaml <<EOF
-image:
-  pullPolicy: $pullPolicy
-mongodbRooPassword: "$(cat notebook-db-mongo-pwd.txt)"
-mongodbUsername: "notebookinfo"
-mongodbPassword: "$(cat notebook-db-mongo-pwd.txt)"
-mongodbDatabase: "notebookinfo"
-persistence:
-  enabled: false
+    cat >notebooks-mongo-service.yaml <<EOF
+kind: Service
+apiVersion: v1
+metadata:
+  name: notebooks-mongo
+spec:
+  selector:
+    app: notebooks-mongo
+  ports:
+  - protocol: TCP
+    port: 27017
+    targetPort: 27017
+  type: NodePort
+EOF
+
+    cat >notebooks-mongo-deploy.yaml <<EOF
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: notebooks-mongo
+  labels:
+    app: notebooks-mongo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notebooks-mongo
+  template:
+    metadata:
+      labels:
+        app: notebooks-mongo
+    spec:
+      containers:
+      - name: notebooks-mongo
+        image: mongo:3.4
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 27017
+        env:
+        - name: MONGO_INITDB_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: notebooks-mongo
+              key: password
+        - name: MONGO_INITDB_ROOT_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: notebooks-mongo
+              key: user
 EOF
 fi
 
-echo "# password secret"
-echo "  kubectl create secret generic notebook-db-mongo-pwd --from-literal=database=notebookinfo --from-literal=user=notebookinfo --from-file=password=notebook-db-mongo-pwd.txt"
-echo "# actual mongo setup"
-
-echo "  if ! [[ -n \"\$(helm ls $tls notebook-info-db | grep -E '^notebook-info-db\s' )\" ]]; then"
-echo "    helm install $tls --name notebook-info-db -f notebook-mongo-helm-values.yaml stable/mongodb"
-echo "  else"
-echo "    helm upgrade $tls notebook-info-db -f notebook-mongo-helm-values.yaml stable/mongodb"
-echo "  fi"
+echo "# notebooks info secret"
+echo "  kubectl create secret generic notebooks-mongo --from-literal=database=notebookinfo --from-literal=user=notebookinfo --from-file=password=notebook-db-mongo-pwd.txt" --from-literal=root-connect="mongodb://notebookinfo:$NOTEBOOK_MONGO_PASS@notebooks-mongo/notebookinfo"
+echo "# notebooks info service"
+echo "  kubectl create -f notebooks-mongo-service.yaml"
+echo "# notebooks info deployment"
+echo "  kubectl apply -f notebooks-mongo-deploy.yaml"
 
 echo "## Environment setup: user settings redis db"
 if [ -n updateDeploy ]; then
