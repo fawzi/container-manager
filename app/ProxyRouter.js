@@ -45,9 +45,9 @@ ProxyRouter.prototype.lookup = function(req, res, userID, isWebsocket, path, nex
             return;
           } else if (err.error === 'too many containers') {
             components.evalHtmlTemplate("maxContainers.html", {
-              pods: pods
+              pods: err.pods
             }, function(err, errorHtml) {
-              repl.status(503).send(errorHtml)
+              res.status(503).send(errorHtml)
             })
           } else {
             logger.error(`error starting container ${repl.podName}: ${stringify(err)}`)
