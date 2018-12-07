@@ -605,7 +605,7 @@ HERE
         - name: MONGODB_URL
           valueFrom:
             secretKeyRef:
-              name: notebook-db-mongo-pwd
+              name: notebooks-mongo
               key: root-connect
         - name: SESSION_DB_PASSWORD
           valueFrom:
@@ -617,11 +617,6 @@ HERE
             secretKeyRef:
               name: user-settings-db
               key: redis-password
-        - name: NOTEBOOK_INFO_DB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: notebook-db-mongo-pwd
-              key: password
         - name: KUBERNETES_SERVER_URL
           valueFrom:
             secretKeyRef:
