@@ -1,6 +1,6 @@
 #!/bin/bash
 nomadRoot=${nomadRoot:-/nomad/nomadlab}
-buildDocker=1
+buildDocker=""
 updateDeploy=1
 target_hostname=${target_hostname:-$HOSTNAME}
 chownRoot=
@@ -185,7 +185,9 @@ else
     echo "  helm init --service-account tiller"
 fi
 echo "# Prometheus setup"
+echo "  mkdir -p $chownRoot/prometheus/alertmanager-volume"
 echo "  kubectl create -f prometheus-alertmanager-volume.yaml"
+echo "  mkdir -p $chownRoot/prometheus/server-volume"
 echo "  kubectl create -f prometheus-server-volume.yaml"
 echo "  helm install $tls --name prometheus -f prometheus-values.yaml stable/prometheus"
 
@@ -351,6 +353,10 @@ fi
 
 
 echo "# volume for redis persistence"
+echo "  if [ !-d \"$nomadRoot/servers/$target_hostname/user-settings-redis-data\" ] ; then"
+echo "    mkdir -p $nomadRoot/servers/$target_hostname/user-settings-redis-data"
+echo "    chown 1001:1001 $nomadRoot/servers/$target_hostname/user-settings-redis-data"
+echo "  fi"
 echo "  kubectl create -f user-settings-redis-volume.yaml"
 echo "# password secret"
 echo "  kubectl create secret generic user-settings-db --from-file=redis-password=user-settings-redis-pwd.txt"
