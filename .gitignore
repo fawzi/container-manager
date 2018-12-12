@@ -1,8 +1,8 @@
 #pwds
 kubeSupport/redis-session-db-pwd.txt
 kubeSupport/redis-user-db-pwd.txt
-*-pwd.txt
-/*.yaml
+/deploy/*-pwd.txt
+/deploy/*.yaml
 
 # Logs
 logs
