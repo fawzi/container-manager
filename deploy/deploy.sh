@@ -9,6 +9,10 @@ debug=
 alwaysPull=
 secretWebCerts=
 
+mydir=$(dirname $0)
+if [ -n "$mydir"] ; then
+  cd "$mydir"
+fi
 while test ${#} -gt 0
 do
     case "$1" in
@@ -39,7 +43,7 @@ do
           NODE_ENV=$1
           ;;
       --target-hostname)
-          shift
+         shift
           target_hostname=$1
           ;;
       --nomad-root)
@@ -74,7 +78,7 @@ if [ -n "$buildDocker" ] ; then
     if [ -n "$alwaysPull" ] ; then
         docker pull node:carbon
     fi
-    docker build -t $name .
+    docker build -t $name ..
     if [ -z "$noPush" ] ; then
         docker push $name
     fi
@@ -354,7 +358,7 @@ fi
 
 
 echo "# volume for redis persistence"
-echo "  if [ !-d \"$nomadRoot/servers/$target_hostname/user-settings-redis-data\" ] ; then"
+echo "  if [ ! -d \"$nomadRoot/servers/$target_hostname/user-settings-redis-data\" ] ; then"
 echo "    mkdir -p $nomadRoot/servers/$target_hostname/user-settings-redis-data"
 echo "    chown 1001:1001 $nomadRoot/servers/$target_hostname/user-settings-redis-data"
 echo "  fi"
@@ -385,10 +389,10 @@ echo "  kubectl --namespace analytics create secret docker-registry garching-kub
 echo "# get certificates to connect to kubernetes (either from kube-certs of ~/.minikube)"
 echo "  if [ -f kube-certs/client.key ] ; then"
 echo "    pushd kube-certs"
-echo "  elif [ -e ../kube-certs/client.key ] ; then"
-echo "    pushd ../kube-certs"
 echo "  elif [ -e ../../kube-certs/client.key ] ; then"
 echo "    pushd ../../kube-certs"
+echo "  elif [ -e ../../../kube-certs/client.key ] ; then"
+echo "    pushd ../../../kube-certs"
 echo "  elif [ -e ~/.minikube ] ; then"
 echo "    mkdir -p ./kube-certs"
 echo "    pushd  kube-certs"
@@ -417,10 +421,10 @@ echo "  popd"
 echo "# create secret with web certificates"
 echo "  if [ -f web-certs/key.pem ] ; then"
 echo "    pushd web-certs"
-echo "  elif [ -f ../web-certs/key.pem ]; then"
-echo "    pushd ../web-certs"
 echo "  elif [ -f ../../web-certs/key.pem ]; then"
-echo "    pushd ../../web-certs"
+echo "    pushd ../web-certs"
+echo "  elif [ -f ../../../web-certs/key.pem ]; then"
+echo "    pushd ../../../web-certs"
 echo "  else"
 echo "    pushd ."
 echo "  fi"
