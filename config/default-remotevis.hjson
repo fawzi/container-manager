@@ -2,7 +2,7 @@ k8component: {
   image: {
     imageType: remotevis
     subtype: default1
-    image: "labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/nomadvis:v1.0.8",
+    image: "labdev-nomad.esc.rzg.mpg.de:5000/nomadlab/nomadvis:v1.1.0",
     port: 8809,
     prefix: "/remotevis",
     templatePath: "kube/remoteVisTemplate.yaml"
