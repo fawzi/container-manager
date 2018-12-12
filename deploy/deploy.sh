@@ -10,7 +10,7 @@ alwaysPull=
 secretWebCerts=
 
 mydir=$(dirname $0)
-if [ -n "$mydir"] ; then
+if [ -n "$mydir" ] ; then
   cd "$mydir"
 fi
 while test ${#} -gt 0
