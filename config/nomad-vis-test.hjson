@@ -20,11 +20,11 @@
     }
   }
   session_redis: {
-    port: 30289
-    host: 130.183.207.101
+    port: 30038
+    host: 130.183.207.100
   }
   usersettings_redis: {
-    port: 31996
-    host: 130.183.207.101
+    port: 31923
+    host: 130.183.207.100
   }
 }
