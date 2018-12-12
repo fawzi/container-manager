@@ -43,12 +43,14 @@ spec:
       httpGet:
         path: "{{e healthPath}}"
         port: {{n port}}
+        scheme: "{{e healthScheme}}"
       initialDelaySeconds: {{n healthDelay}}
       periodSeconds: {{n healthPeriod}}
     livenessProbe:
       httpGet:
         path: "{{e livePath}}"
         port: {{n port}}
+        scheme: "{{e liveScheme}}"
       initialDelaySeconds: {{n liveDelay}}
       periodSeconds: {{n livePeriod}}
   volumes:

@@ -18,16 +18,14 @@ do
       --tls)
           tls=--tls
           ;;
-      --docker-only)
+      --update-docker)
           buildDocker=1
-          updateDeploy=""
           ;;
       --always-pull)
           alwaysPull=1
           ;;
-      --docker-skip)
-          buildDocker=""
-          updateDeploy=1
+      --no-deploy-scripts)
+          updateDeploy=""
           ;;
       --no-push)
           noPush=1
@@ -53,7 +51,7 @@ do
           chownRoot=$1
           ;;
       *)
-          echo "usage: $0 [--debug] [--tls] [--nomad-root <pathToNomadRoot>] [--chown-root <pathForPrometheusVolumes>] [--env <NODE_ENV_VALUE>] [--docker-only] [--docker-skip] [--target-hostname hostname] [--secret-web-certs <secretName>]  [--always-pull] [--no-push]"
+          echo "usage: $0 [--debug] [--tls] [--nomad-root <pathToNomadRoot>] [--chown-root <pathForPrometheusVolumes>] [--env <NODE_ENV_VALUE>] [--update-docker] [--no-deploy-scripts] [--target-hostname hostname] [--secret-web-certs <secretName>]  [--always-pull] [--no-push]"
           echo
           echo "Env variables: NODE_ENV, target_hostname, nomadRoot"
           echo "Examples:"
@@ -67,7 +65,10 @@ do
 done
 
 chownRoot=${chownRoot:-$nomadRoot/servers/$target_hostname}
-version=$(git describe --tags --always --dirty)
+if [ -n "$buildDocker" ] ; then
+    git describe --tags --always --dirty > version_to_deploy
+fi
+version=$(cat version_to_deploy)
 name="analytics-toolkit.nomad-coe.eu:5509/nomadlab/nomad-container-manager:$version"
 if [ -n "$buildDocker" ] ; then
     if [ -n "$alwaysPull" ] ; then
@@ -86,7 +87,7 @@ fi
 
 echo "# Initial setup"
 echo "To make kubectl work, for example for the test kubernetes"
-echo "  export KUBECONFIG=/nomad/nomadlab/kubernetes/dev/config"
+echo "  export KUBECONFIG=/etc/kubernetes/admin.conf"
 
 echo "# Helm install"
 if [ -n updateDeploy ]; then
@@ -281,7 +282,7 @@ spec:
       containers:
       - name: notebooks-mongo
         image: mongo:3.4
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: $pullPolicy
         ports:
         - containerPort: 27017
         env:
@@ -530,6 +531,10 @@ HERE
 fi
 
 if [ -n "$updateDeploy" ]; then
+    scheme=HTTP
+    if [ "$target_hostname" == "labdev-nomad" -o  "$target_hostname" == "labtest-nomad" ] ; then
+      scheme=HTTPS
+    fi
     targetF=container-manager-deploy-$imageType.yaml
     cat > $targetF <<HERE
 apiVersion: apps/v1beta2
@@ -654,10 +659,6 @@ EOF
         - mountPath: "/usr/src/app/web-certs"
           name: web-certs
 EOF
-    fi
-    scheme=HTTP
-    if [ "$target_hostname" == "labdev-nomad" -o  "$target_hostname" == "labtest-nomad" ] ; then
-      scheme=HTTPS
     fi
     cat >> $targetF <<EOF
         - mountPath: "/usr/src/app/kube-certs"

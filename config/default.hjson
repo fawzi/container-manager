@@ -64,9 +64,11 @@ k8component: {
     prefix: "/beaker"
     autoRestart: true
     healthPath: "/"
+    healthScheme: "HTTP"
     healthDelay: 2
     healthPeriod: 10
     livePath: "/"
+    liveScheme: "HTTP"
     liveDelay: 2
     livePeriod: 30
     checksumSkipReStr: "^(?:path[0-9]*|escapedPath[0-9]*)$"
