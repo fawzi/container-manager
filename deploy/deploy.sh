@@ -289,22 +289,24 @@ spec:
         imagePullPolicy: $pullPolicy
         ports:
         - containerPort: 27017
-        env:
-        - name: MONGO_INITDB_ROOT_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: notebooks-mongo
-              key: password
-        - name: MONGO_INITDB_ROOT_USERNAME
-          valueFrom:
-            secretKeyRef:
-              name: notebooks-mongo
-              key: user
+#        env:
+#        - name: MONGO_INITDB_ROOT_PASSWORD
+#          valueFrom:
+#            secretKeyRef:
+#              name: notebooks-mongo
+#              key: password
+#        - name: MONGO_INITDB_ROOT_USERNAME
+#          valueFrom:
+#            secretKeyRef:
+#              name: notebooks-mongo
+#              key: user
 EOF
 fi
 
 echo "# notebooks info secret"
 echo "  kubectl create secret generic notebooks-mongo --from-literal=database=notebookinfo --from-literal=user=notebookinfo --from-file=password=notebook-db-mongo-pwd.txt" --from-literal=root-connect="mongodb://notebookinfo:$NOTEBOOK_MONGO_PASS@notebooks-mongo/notebookinfo"
+echo "# nopass version"
+echo "  kubectl create secret generic notebooks-mongo --from-literal=database=notebookinfo --from-literal=user=notebookinfo --from-file=password=notebook-db-mongo-pwd.txt" --from-literal=root-connect="mongodb://notebooks-mongo/notebookinfo"
 echo "# notebooks info service"
 echo "  kubectl create -f notebooks-mongo-service.yaml"
 echo "# notebooks info deployment"
