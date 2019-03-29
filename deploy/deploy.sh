@@ -73,7 +73,7 @@ if [ -n "$buildDocker" ] ; then
     git describe --tags --always --dirty > version_to_deploy
 fi
 version=$(cat version_to_deploy)
-name="analytics-toolkit.nomad-coe.eu:5509/nomadlab/nomad-container-manager:$version"
+name="gitlab-registry.mpcdf.mpg.de/nomad-lab/container-manager:$version"
 if [ -n "$buildDocker" ] ; then
     if [ -n "$alwaysPull" ] ; then
         docker pull node:carbon
@@ -195,15 +195,6 @@ echo "  kubectl create -f prometheus-alertmanager-volume.yaml"
 echo "  mkdir -p $chownRoot/prometheus/server-volume"
 echo "  kubectl create -f prometheus-server-volume.yaml"
 echo "  helm install $tls --name prometheus -f prometheus-values.yaml stable/prometheus"
-
-if [ -n updateDeploy ]; then
-    cat >container-manager-namespace.yaml <<EOF
-kind: Namespace
-apiVersion: v1
-metadata:
-  name: analytics
-EOF
-fi
 
 echo "## Environment setup, redis db for the sessions"
 if [ -n updateDeploy ]; then
@@ -376,18 +367,58 @@ echo "  fi"
 
 echo "## Environment setup for container manager"
 if [ -n updateDeploy ]; then
-cat >container-manager-namespace.yaml <<EOF
+    cat >container-manager-namespace.yaml <<EOF
 kind: Namespace
 apiVersion: v1
 metadata:
   name: analytics
 EOF
+    cat >container-manager-user.yaml <<EOF
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: analytics-user
+  namespace: analytics
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: analytics-user-full-access
+  namespace: analytics
+rules:
+- apiGroups: ["", "extensions", "apps"]
+  resources: ["*"]
+  verbs: ["*"]
+- apiGroups: ["batch"]
+  resources:
+  - jobs
+  - cronjobs
+  verbs: ["*"]
+
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: analytics-user-view
+  namespace: analytics
+subjects:
+- kind: ServiceAccount
+  name: analytics-user
+  namespace: analytics
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: analytics-user-full-access
+EOF
 fi
 echo "# create namespace for pods of container manager"
 echo "  kubectl create -f container-manager-namespace.yaml"
-echo "# secret to pull images from analytics-toolkit.nomad-coe.eu:5509"
-echo "  kubectl create secret docker-registry garching-kube --docker-server=analytics-toolkit.nomad-coe.eu:5509 --docker-username=\$DOCKER_USERNAME --docker-password=\"\$DOCKER_PASSWORD\" --docker-email=\$DOCKER_EMAIL"
-echo "  kubectl --namespace analytics create secret docker-registry garching-kube --docker-server=analytics-toolkit.nomad-coe.eu:5509 --docker-username=\$DOCKER_USERNAME --docker-password=\"\$DOCKER_PASSWORD\" --docker-email=\$DOCKER_EMAIL"
+echo "# create user for namespace of pods of container manager"
+echo "  kubectl create -f container-manager-user.yaml"
+echo "# secret to pull images from gitlab-registry.mpcdf.mpg.de"
+echo "  kubectl create secret docker-registry garching-kube --docker-server=gitlab-registry.mpcdf.mpg.de --docker-username=\$DOCKER_USERNAME --docker-password=\"\$DOCKER_PASSWORD\" --docker-email=\$DOCKER_EMAIL"
+echo "  kubectl --namespace analytics create secret docker-registry garching-kube --docker-server=gitlab-registry.mpcdf.mpg.de --docker-username=\$DOCKER_USERNAME --docker-password=\"\$DOCKER_PASSWORD\" --docker-email=\$DOCKER_EMAIL"
 echo "# get certificates to connect to kubernetes (either from kube-certs of ~/.minikube)"
 echo "  if [ -f kube-certs/client.key ] ; then"
 echo "    pushd kube-certs"
