@@ -11,6 +11,11 @@
     "cert": "KUBERNETES_CERT"
     "key":  "KUBERNETES_KEY"
   }
+   "k8component": {
+    "image": "IMAGE_DEFAULT"
+    "imageSubtype": "IMAGE_SUBTYPE"
+    "imageReStr": "IMAGE_RE_STR"
+  }
   mongoDb: {
     url: "MONGODB_URL"
   }

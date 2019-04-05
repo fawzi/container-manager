@@ -1,7 +1,7 @@
 Use deploy to deploy the analytics toolkit.
 
 use
- --docker-skip to avoid building the docker image
+ --update-docker to build a new docker image and update version_to_deploy
  --tsl to use the secure connection for helm
 
 With minikube do
@@ -11,10 +11,15 @@ With minikube do
 
 machine specific deploy:
 
+# labtest-nomad
+
+     cd /nomad/nomadlab/servers/labtest-nomad/beaker-manager/deploy
+     ./deploy.sh --tls --env labtest-nomad --update-docker --secret-web-certs web-certs > deploy.cmds
+
 # labdev-nomad
 
      cd /nomad/nomadlab/servers/labdev-nomad/analytics/beaker
-     ./deploy/deploy.sh --env labdev-nomad --target-hostname labdev-nomad --secret-web-certs web-certs --debug
+     ./deploy/deploy.sh --env labdev-nomad --target-hostname labdev-nomad --secret-web-certs web-certs --debug > deploy/deploy.cmds
 
 development machine, deploy mirroring the filesystem, you might need to manully execute npm install in the container to if you update packages
 
