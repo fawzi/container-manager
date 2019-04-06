@@ -70,7 +70,8 @@ done
 
 chownRoot=${chownRoot:-$nomadRoot/servers/$target_hostname}
 if [ -n "$buildDocker" ] ; then
-    git describe --tags --always --dirty > version_to_deploy
+    v=$(git describe --tags --always --dirty)
+    echo $v > version_to_deploy
 fi
 version=$(cat version_to_deploy)
 name="gitlab-registry.mpcdf.mpg.de/nomad-lab/container-manager:$version"
