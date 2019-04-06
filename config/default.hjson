@@ -94,3 +94,8 @@ userInfo: {
   sharedDirInContainer: "/data/shared"
   mySharedDirInContainer: "/data/my-shared"
 }
+watcher{
+  usePolling: true
+  interval: 2000
+  binaryInterval: 6000
+}

@@ -237,9 +237,9 @@ module.exports = function(config, models){
 
   logger.info('starting watcher')
   var watcher = chokidar.watch(config.userInfo.basePathToWatch+ '/**/*.bkr', {
-    usePolling: true, // more expensive, but works also on GPFS with updates from multiple machines
-    interval: 1000,
-    binaryInterval: 3000
+    usePolling: config.watcher.usePolling, // more expensive, but works also on GPFS with updates from multiple machines
+    interval: config.watcher.interval,
+    binaryInterval: config.watcher.binaryInterval
   });
   watcher.on('add', (path,stats) => {
     addNewNotebook(path, stats)
