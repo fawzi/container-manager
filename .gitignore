@@ -3,6 +3,7 @@ kubeSupport/redis-session-db-pwd.txt
 kubeSupport/redis-user-db-pwd.txt
 /deploy/*-pwd.txt
 /deploy/*.yaml
+/deploy/deploy.cmds
 
 # when deploying with docker keeping a package-lock.json file is more hassle than the issues it solves
 # (it would be created in the docker image, or if mounting this as root)

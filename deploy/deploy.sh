@@ -1,13 +1,8 @@
 #!/bin/bash
+# Deploys the container manager and related things
+
 nomadRoot=${nomadRoot:-/nomad/nomadlab}
-buildDocker=""
-updateDeploy=1
 target_hostname=${target_hostname:-$HOSTNAME}
-chownRoot=
-tls=
-debug=
-alwaysPull=
-secretWebCerts=
 
 mydir=$(dirname $0)
 if [ -n "$mydir" ] ; then
@@ -29,7 +24,7 @@ do
           alwaysPull=1
           ;;
       --no-deploy-scripts)
-          updateDeploy=""
+          skipDeploy=1
           ;;
       --no-push)
           noPush=1
@@ -55,9 +50,9 @@ do
           chownRoot=$1
           ;;
       *)
-          echo "usage: $0 [--debug] [--tls] [--nomad-root <pathToNomadRoot>] [--chown-root <pathForPrometheusVolumes>] [--env <NODE_ENV_VALUE>] [--update-docker] [--no-deploy-scripts] [--target-hostname hostname] [--secret-web-certs <secretName>]  [--always-pull] [--no-push]"
+          echo "usage: $0 [--debug] [--tls] [--nomad-root <pathToNomadRoot>] [--chown-root <pathForPrometheusVolumes>] [--env <NODE_ENV_VALUE>] [--update-docker] [--no-deploy-scripts] [--target-hostname hostname] [--secret-web-certs <secretName>]  [--always-pull] [--no-push] [--update-base-version]"
           echo
-          echo "Env variables: NODE_ENV, target_hostname, nomadRoot"
+          echo "Env variables: NODE_ENV, target_hostname, nomadRoot, nomadRootContainer"
           echo "Examples:"
           echo "export NODE_ENV=nomad-vis-test"
           echo "export NODE_ENV=labenv"
@@ -70,11 +65,13 @@ done
 
 chownRoot=${chownRoot:-$nomadRoot/servers/$target_hostname}
 if [ -n "$buildDocker" ] ; then
+    git checkout ./container_version
     v=$(git describe --tags --always --dirty)
-    echo $v > version_to_deploy
+    echo $v > container_version
 fi
-version=$(cat version_to_deploy)
-name="gitlab-registry.mpcdf.mpg.de/nomad-lab/container-manager:$version"
+container_version=$(cat container_version)
+
+name="gitlab-registry.mpcdf.mpg.de/nomad-lab/container-manager:$container_version"
 if [ -n "$buildDocker" ] ; then
     if [ -n "$alwaysPull" ] ; then
         docker pull node:carbon
@@ -89,116 +86,11 @@ if [ -n "$alwaysPull" ] ; then
 else
     pullPolicy=IfNotPresent
 fi
-
-echo "# Initial setup"
-echo "To make kubectl work, for example for the test kubernetes"
-echo "  export KUBECONFIG=/etc/kubernetes/admin.conf"
-
-echo "# Helm install"
-if [ -n updateDeploy ]; then
-    cat > helm-tiller-serviceaccount.yaml <<EOF
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: tiller
-  namespace: kube-system
----
-apiVersion: rbac.authorization.k8s.io/v1beta1
-kind: ClusterRoleBinding
-metadata:
-  name: tiller
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: cluster-admin
-subjects:
-  - kind: ServiceAccount
-    name: tiller
-    namespace: kube-system
-EOF
-    cat > prometheus-alertmanager-volume.yaml <<EOF
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: prometheus-alertmanager
-spec:
-  capacity:
-    storage: 5Gi
-  accessModes:
-    - ReadWriteOnce
-  persistentVolumeReclaimPolicy: Recycle
-  storageClassName: manual-alertmanager
-  hostPath:
-    path: $chownRoot/prometheus/alertmanager-volume
-EOF
-
-    cat > prometheus-server-volume.yaml <<EOF
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: prometheus-server
-spec:
-  capacity:
-    storage: 16Gi
-  storageClassName: manual-prometheus
-  accessModes:
-    - ReadWriteOnce
-  persistentVolumeReclaimPolicy: Recycle
-  hostPath:
-    path: $chownRoot/prometheus/server-volume
-EOF
-
-    cat > prometheus-values.yaml <<EOF
-alertmanager:
-  persistentVolume:
-    storageClass: manual-alertmanager
-  service:
-    type: NodePort
-server:
-  persistentVolume:
-    storageClass: manual-prometheus
-  service:
-    type: NodePort
-EOF
-fi
-
-echo "  kubectl create -f helm-tiller-serviceaccount.yaml"
-if [ -n "$tls" ] ; then
-    echo "# secure heml as described in https://docs.helm.sh/using_helm/#using-ssl-between-helm-and-tiller"
-    echo "# create certificates"
-    echo "mkdir helm-certs"
-    echo "cd helm-certs"
-    echo "openssl genrsa -out ./ca.key.pem 4096"
-    echo "openssl req -key ca.key.pem -new -x509 -days 7300 -sha256 -out ca.cert.pem -extensions v3_ca"
-    echo "openssl genrsa -out ./tiller.key.pem 4096"
-    echo "openssl genrsa -out ./helm.key.pem 4096"
-    echo "openssl req -key tiller.key.pem -new -sha256 -out tiller.csr.pem"
-    echo "openssl req -key helm.key.pem -new -sha256 -out helm.csr.pem"
-    echo "openssl x509 -req -CA ca.cert.pem -CAkey ca.key.pem -CAcreateserial -in tiller.csr.pem -out tiller.cert.pem -days 365"
-    echo "openssl x509 -req -CA ca.cert.pem -CAkey ca.key.pem -CAcreateserial -in helm.csr.pem -out helm.cert.pem  -days 365"
-    echo "cp ca.cert.pem \$(helm home)/ca.pem"
-    echo "cp helm.cert.pem \$(helm home)/cert.pem"
-    echo "cp helm.key.pem \$(helm home)/key.pem"
-    echo "# initialize helm"
-    echo "helm init --override 'spec.template.spec.containers[0].command'='{/tiller,--storage=secret}' \\"
-    echo "          --tiller-tls \\"
-    echo "          --tiller-tls-verify \\"
-    echo "          --tiller-tls-cert=cert.pem \\"
-    echo "          --tiller-tls-key=key.pem \\"
-    echo "          --tls-ca-cert=ca.pem \\"
-    echo "          --service-account=tiller"
-else
-    echo "  helm init --service-account tiller"
-fi
-echo "# Prometheus setup"
-echo "  mkdir -p $chownRoot/prometheus/alertmanager-volume"
-echo "  kubectl create -f prometheus-alertmanager-volume.yaml"
-echo "  mkdir -p $chownRoot/prometheus/server-volume"
-echo "  kubectl create -f prometheus-server-volume.yaml"
-echo "  helm install $tls --name prometheus -f prometheus-values.yaml stable/prometheus"
+config=${NODE_ENV}
+user=${USER}
 
 echo "## Environment setup, redis db for the sessions"
-if [ -n updateDeploy ]; then
+if [ -z "$skipDeploy" ]; then
     if [ ! -e session-db-redis-pwd.txt ]; then
         echo "created random password in session-db-redis-pwd.txt"
         cat /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 28 > session-db-redis-pwd.txt
@@ -235,7 +127,7 @@ echo "  fi"
 
 
 echo "## Environment setup, mongo db for notebook & usage information"
-if [ -n updateDeploy ]; then
+if [ -z "$skipDeploy" ]; then
 
     if [ ! -e notebook-db-mongo-pwd.txt ]; then
         echo "created random password in notebook-db-mongo-pwd.txt"
@@ -305,7 +197,7 @@ echo "# notebooks info deployment"
 echo "  kubectl apply -f notebooks-mongo-deploy.yaml"
 
 echo "## Environment setup: user settings redis db"
-if [ -n updateDeploy ]; then
+if [ -z "$skipDeploy" ]; then
     if [ ! -e user-settings-redis-pwd.txt ]; then
         echo "created random password in user-settings-redis-pwd.txt"
         cat /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 28 > user-settings-redis-pwd.txt
@@ -367,7 +259,7 @@ echo "    helm upgrade $tls user-settings-db -f user-settings-redis-helm-values.
 echo "  fi"
 
 echo "## Environment setup for container manager"
-if [ -n updateDeploy ]; then
+if [ -z "$skipDeploy" ]; then
     cat >container-manager-namespace.yaml <<EOF
 kind: Namespace
 apiVersion: v1
@@ -467,7 +359,7 @@ echo "  popd"
 echo
 
 echo "# create cron job updating info on services"
-if [ -n updateDeploy ]; then
+if [ -z "$skipDeploy" ]; then
 targetF=service-dumper.yaml
 cat > "$targetF" <<EOF
 apiVersion: v1
@@ -548,7 +440,7 @@ for imageType in beaker jupyter creedo remotevis userapi watcher; do
 
 if [ "$imageType" != "watcher" ] ; then
     echo "## $imageType Initial setup: create container manager service"
-    if [ -n updateDeploy ]; then
+    if [ -z "$skipDeploy" ]; then
         cat >container-manager-service-$imageType.yaml <<HERE
 kind: Service
 apiVersion: v1
@@ -568,7 +460,7 @@ HERE
     echo "  kubectl create -f container-manager-service-$imageType.yaml"
 fi
 
-if [ -n "$updateDeploy" ]; then
+if [ -z "$skipDeploy" ]; then
     scheme=HTTP
     if [ "$target_hostname" == "labdev-nomad" -o  "$target_hostname" == "labtest-nomad" ] ; then
       scheme=HTTPS
