@@ -50,6 +50,7 @@ do
           chownRoot=$1
           ;;
       *)
+          echo "unexpected argument '$1'"
           echo "usage: $0 [--debug] [--tls] [--nomad-root <pathToNomadRoot>] [--chown-root <pathForPrometheusVolumes>] [--env <NODE_ENV_VALUE>] [--update-docker] [--no-deploy-scripts] [--target-hostname hostname] [--secret-web-certs <secretName>]  [--always-pull] [--no-push] [--update-base-version]"
           echo
           echo "Env variables: NODE_ENV, target_hostname, nomadRoot, nomadRootContainer"
